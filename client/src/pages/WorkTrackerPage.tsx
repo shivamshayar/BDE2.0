@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import ActiveUsersSidebar from "@/components/ActiveUsersSidebar";
+import CompactSessionsSidebar from "@/components/CompactSessionsSidebar";
 import MultiUserWorkTracker from "@/components/MultiUserWorkTracker";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
@@ -128,11 +128,12 @@ export default function WorkTrackerPage() {
 
   return (
     <div className="flex h-screen bg-background">
-      <ActiveUsersSidebar
+      <CompactSessionsSidebar
         sessions={sessions}
         activeSessionId={activeSessionId}
         onSelectSession={setActiveSessionId}
         onAddSession={() => setShowAddUserDialog(true)}
+        onSettings={() => setLocation("/admin")}
       />
 
       <div className="flex-1 flex flex-col">
