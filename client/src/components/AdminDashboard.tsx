@@ -22,7 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, Users, Package, Activity, ClipboardList, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Package, Activity, ClipboardList, Search, Monitor, Key } from "lucide-react";
 
 interface User {
   id: string;
@@ -31,11 +31,19 @@ interface User {
   imageUrl?: string;
 }
 
+interface BDEMachine {
+  id: string;
+  machineId: string;
+  createdAt: string;
+  lastLogin?: string;
+}
+
 interface AdminDashboardProps {
   users?: User[];
   partNumbers?: string[];
   orderNumbers?: string[];
   performanceIds?: string[];
+  bdeMachines?: BDEMachine[];
 }
 
 export default function AdminDashboard({
@@ -43,14 +51,22 @@ export default function AdminDashboard({
   partNumbers = [],
   orderNumbers = [],
   performanceIds = [],
+  bdeMachines = [],
 }: AdminDashboardProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState("users");
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [selectedMachine, setSelectedMachine] = useState<BDEMachine | null>(null);
+  const [activeTab, setActiveTab] = useState("machines");
 
   const filteredUsers = users.filter((user) =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleResetPassword = (machine: BDEMachine) => {
+    setSelectedMachine(machine);
+    setShowResetPasswordDialog(true);
+  };
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -60,12 +76,16 @@ export default function AdminDashboard({
             Admin Dashboard
           </h1>
           <p className="text-muted-foreground mt-2">
-            Manage users and master data for the BDE system
+            Manage BDE machines, users, and master data
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="machines" data-testid="tab-machines">
+              <Monitor className="w-4 h-4 mr-2" />
+              BDE Machines
+            </TabsTrigger>
             <TabsTrigger value="users" data-testid="tab-users">
               <Users className="w-4 h-4 mr-2" />
               Users
@@ -83,6 +103,67 @@ export default function AdminDashboard({
               Performance IDs
             </TabsTrigger>
           </TabsList>
+
+          {/* BDE Machines Tab */}
+          <TabsContent value="machines" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <CardTitle>BDE Machines</CardTitle>
+                    <CardDescription>Manage machine IDs and credentials</CardDescription>
+                  </div>
+                  <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-machine">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add BDE Machine
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Machine ID</TableHead>
+                      <TableHead>Created At</TableHead>
+                      <TableHead>Last Login</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {bdeMachines.map((machine) => (
+                      <TableRow key={machine.id} data-testid={`row-machine-${machine.id}`}>
+                        <TableCell className="font-mono font-medium">{machine.machineId}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{machine.createdAt}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {machine.lastLogin || "Never"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleResetPassword(machine)}
+                              data-testid={`button-reset-password-${machine.id}`}
+                            >
+                              <Key className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => console.log("Delete machine:", machine.id)}
+                              data-testid={`button-delete-machine-${machine.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Users Tab */}
           <TabsContent value="users" className="space-y-6">
@@ -331,24 +412,45 @@ export default function AdminDashboard({
           </TabsContent>
         </Tabs>
 
+        {/* Add Dialog */}
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Item</DialogTitle>
+              <DialogTitle>
+                {activeTab === "machines" ? "Add New BDE Machine" : `Add New ${activeTab === "users" ? "User" : activeTab.slice(0, -1)}`}
+              </DialogTitle>
               <DialogDescription>
-                Add a new {activeTab === "users" ? "user" : activeTab.slice(0, -1)} to the system
+                {activeTab === "machines" 
+                  ? "Create a new BDE machine with ID and password"
+                  : `Add a new ${activeTab === "users" ? "user" : activeTab.slice(0, -1)} to the system`
+                }
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" placeholder="Enter name" data-testid="input-add-name" />
-              </div>
-              {activeTab === "users" && (
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Input id="role" placeholder="Enter role" data-testid="input-add-role" />
-                </div>
+              {activeTab === "machines" ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="machineId">Machine ID</Label>
+                    <Input id="machineId" placeholder="e.g., MACHINE-001" data-testid="input-machine-id" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input id="password" type="password" placeholder="Enter password" data-testid="input-password" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input id="name" placeholder="Enter name" data-testid="input-add-name" />
+                  </div>
+                  {activeTab === "users" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="role">Role</Label>
+                      <Input id="role" placeholder="Enter role" data-testid="input-add-role" />
+                    </div>
+                  )}
+                </>
               )}
             </div>
             <DialogFooter>
@@ -360,6 +462,39 @@ export default function AdminDashboard({
                 setShowAddDialog(false);
               }} data-testid="button-confirm-add">
                 Add
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reset Password Dialog */}
+        <Dialog open={showResetPasswordDialog} onOpenChange={setShowResetPasswordDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset Password</DialogTitle>
+              <DialogDescription>
+                Reset password for {selectedMachine?.machineId}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input id="newPassword" type="password" placeholder="Enter new password" data-testid="input-new-password" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input id="confirmPassword" type="password" placeholder="Confirm new password" data-testid="input-confirm-password" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowResetPasswordDialog(false)} data-testid="button-cancel-reset">
+                Cancel
+              </Button>
+              <Button onClick={() => {
+                console.log("Reset password for:", selectedMachine?.machineId);
+                setShowResetPasswordDialog(false);
+              }} data-testid="button-confirm-reset">
+                Reset Password
               </Button>
             </DialogFooter>
           </DialogContent>

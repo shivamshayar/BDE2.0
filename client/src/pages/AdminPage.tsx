@@ -18,6 +18,12 @@ export default function AdminPage() {
     { id: "4", name: "Emily Davis", role: "Line Supervisor", imageUrl: user4 },
   ];
 
+  const mockBDEMachines = [
+    { id: "1", machineId: "MACHINE-001", createdAt: "2024-01-15", lastLogin: "2024-10-13 10:30" },
+    { id: "2", machineId: "MACHINE-002", createdAt: "2024-02-20", lastLogin: "2024-10-12 14:15" },
+    { id: "3", machineId: "MACHINE-003", createdAt: "2024-03-10" },
+  ];
+
   const mockPartNumbers = ["PN-1001", "PN-1002", "PN-1003", "PN-1004", "PN-1005"];
   const mockOrderNumbers = ["ORD-2024-001", "ORD-2024-002", "ORD-2024-003", "ORD-2024-004"];
   const mockPerformanceIds = ["PERF-A", "PERF-B", "PERF-C", "PERF-D"];
@@ -42,6 +48,7 @@ export default function AdminPage() {
 
       <AdminDashboard
         users={mockUsers}
+        bdeMachines={mockBDEMachines}
         partNumbers={mockPartNumbers}
         orderNumbers={mockOrderNumbers}
         performanceIds={mockPerformanceIds}

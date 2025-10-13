@@ -2,16 +2,9 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import Timer from "./Timer";
+import FlexibleInput from "./FlexibleInput";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -151,83 +144,35 @@ export default function MultiUserWorkTracker({
             {/* Data Entry Form */}
             <Card className="p-8">
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor={`partNumber-${session.id}`}>
-                    Part Number <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={session.partNumber}
-                    onValueChange={(value) => onUpdateSession?.(session.id, { partNumber: value })}
-                    disabled={session.isRunning}
-                  >
-                    <SelectTrigger
-                      id={`partNumber-${session.id}`}
-                      className="h-12"
-                      data-testid="select-part-number"
-                    >
-                      <SelectValue placeholder="Select part number" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {partNumbers.map((pn) => (
-                        <SelectItem key={pn} value={pn}>
-                          {pn}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <FlexibleInput
+                  id={`partNumber-${session.id}`}
+                  label="Part Number"
+                  value={session.partNumber}
+                  onChange={(value) => onUpdateSession?.(session.id, { partNumber: value })}
+                  options={partNumbers}
+                  disabled={session.isRunning}
+                  required
+                />
 
-                <div className="space-y-2">
-                  <Label htmlFor={`orderNumber-${session.id}`}>
-                    Order Number <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={session.orderNumber}
-                    onValueChange={(value) => onUpdateSession?.(session.id, { orderNumber: value })}
-                    disabled={session.isRunning}
-                  >
-                    <SelectTrigger
-                      id={`orderNumber-${session.id}`}
-                      className="h-12"
-                      data-testid="select-order-number"
-                    >
-                      <SelectValue placeholder="Select order number" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {orderNumbers.map((on) => (
-                        <SelectItem key={on} value={on}>
-                          {on}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <FlexibleInput
+                  id={`orderNumber-${session.id}`}
+                  label="Order Number"
+                  value={session.orderNumber}
+                  onChange={(value) => onUpdateSession?.(session.id, { orderNumber: value })}
+                  options={orderNumbers}
+                  disabled={session.isRunning}
+                  required
+                />
 
-                <div className="space-y-2">
-                  <Label htmlFor={`performanceId-${session.id}`}>
-                    Performance ID <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={session.performanceId}
-                    onValueChange={(value) => onUpdateSession?.(session.id, { performanceId: value })}
-                    disabled={session.isRunning}
-                  >
-                    <SelectTrigger
-                      id={`performanceId-${session.id}`}
-                      className="h-12"
-                      data-testid="select-performance-id"
-                    >
-                      <SelectValue placeholder="Select performance ID" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {performanceIds.map((pid) => (
-                        <SelectItem key={pid} value={pid}>
-                          {pid}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <FlexibleInput
+                  id={`performanceId-${session.id}`}
+                  label="Performance ID"
+                  value={session.performanceId}
+                  onChange={(value) => onUpdateSession?.(session.id, { performanceId: value })}
+                  options={performanceIds}
+                  disabled={session.isRunning}
+                  required
+                />
 
                 <div className="pt-4 space-y-4">
                   {!session.isRunning ? (
