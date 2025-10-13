@@ -100,6 +100,7 @@ class WorkSessionCreate(BaseModel):
     duration_seconds: int
     start_time: datetime
     end_time: datetime
+    # machine_id will be injected from authenticated machine
 
 class WorkSessionResponse(BaseModel):
     id: int

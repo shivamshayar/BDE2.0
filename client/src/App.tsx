@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import { apiClient } from "@/lib/api";
 import LoginPage from "@/pages/LoginPage";
 import UserSelection from "@/pages/UserSelection";
 import WorkTrackerPage from "@/pages/WorkTrackerPage";
@@ -22,6 +23,9 @@ function Router() {
 }
 
 function App() {
+  // Load auth tokens from localStorage on app start
+  apiClient.loadAuth();
+  
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

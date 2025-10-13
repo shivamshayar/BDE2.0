@@ -16,6 +16,7 @@ from api.schemas import (
     Token
 )
 from api.auth import verify_password, get_password_hash, create_access_token
+from api.dependencies import get_current_machine
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -63,7 +64,11 @@ def login_machine(login_data: BDEMachineLogin, db: Session = Depends(get_db)):
     }
 
 @app.post("/api/machines", response_model=BDEMachineResponse)
-def create_machine(machine_data: BDEMachineCreate, db: Session = Depends(get_db)):
+def create_machine(
+    machine_data: BDEMachineCreate, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     # Check if machine ID already exists
     existing = db.query(BDEMachine).filter(BDEMachine.machine_id == machine_data.machine_id).first()
     if existing:
@@ -86,12 +91,20 @@ def create_machine(machine_data: BDEMachineCreate, db: Session = Depends(get_db)
     return new_machine
 
 @app.get("/api/machines", response_model=List[BDEMachineResponse])
-def get_machines(db: Session = Depends(get_db)):
+def get_machines(
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     machines = db.query(BDEMachine).filter(BDEMachine.is_active == True).all()
     return machines
 
 @app.put("/api/machines/{machine_id}/reset-password", response_model=BDEMachineResponse)
-def reset_machine_password(machine_id: int, reset_data: BDEMachinePasswordReset, db: Session = Depends(get_db)):
+def reset_machine_password(
+    machine_id: int, 
+    reset_data: BDEMachinePasswordReset, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     machine = db.query(BDEMachine).filter(BDEMachine.id == machine_id).first()
     
     if not machine:
@@ -107,7 +120,11 @@ def reset_machine_password(machine_id: int, reset_data: BDEMachinePasswordReset,
     return machine
 
 @app.delete("/api/machines/{machine_id}")
-def delete_machine(machine_id: int, db: Session = Depends(get_db)):
+def delete_machine(
+    machine_id: int, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     machine = db.query(BDEMachine).filter(BDEMachine.id == machine_id).first()
     
     if not machine:
@@ -124,7 +141,11 @@ def delete_machine(machine_id: int, db: Session = Depends(get_db)):
 # ==================== User Endpoints ====================
 
 @app.post("/api/users", response_model=UserResponse)
-def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
+def create_user(
+    user_data: UserCreate, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     new_user = User(**user_data.model_dump())
     db.add(new_user)
     db.commit()
@@ -132,19 +153,31 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 @app.get("/api/users", response_model=List[UserResponse])
-def get_users(db: Session = Depends(get_db)):
+def get_users(
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     users = db.query(User).filter(User.is_active == True).all()
     return users
 
 @app.get("/api/users/{user_id}", response_model=UserResponse)
-def get_user(user_id: int, db: Session = Depends(get_db)):
+def get_user(
+    user_id: int, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
 @app.put("/api/users/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, user_data: UserUpdate, db: Session = Depends(get_db)):
+def update_user(
+    user_id: int, 
+    user_data: UserUpdate, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -157,7 +190,11 @@ def update_user(user_id: int, user_data: UserUpdate, db: Session = Depends(get_d
     return user
 
 @app.delete("/api/users/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+def delete_user(
+    user_id: int, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -169,7 +206,11 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 # ==================== Part Number Endpoints ====================
 
 @app.post("/api/part-numbers", response_model=PartNumberResponse)
-def create_part_number(data: PartNumberCreate, db: Session = Depends(get_db)):
+def create_part_number(
+    data: PartNumberCreate, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     # Check if part number already exists
     existing = db.query(PartNumber).filter(PartNumber.part_number == data.part_number).first()
     if existing:
@@ -182,11 +223,18 @@ def create_part_number(data: PartNumberCreate, db: Session = Depends(get_db)):
     return new_part
 
 @app.get("/api/part-numbers", response_model=List[PartNumberResponse])
-def get_part_numbers(db: Session = Depends(get_db)):
+def get_part_numbers(
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     return db.query(PartNumber).filter(PartNumber.is_active == True).all()
 
 @app.delete("/api/part-numbers/{part_id}")
-def delete_part_number(part_id: int, db: Session = Depends(get_db)):
+def delete_part_number(
+    part_id: int, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     part = db.query(PartNumber).filter(PartNumber.id == part_id).first()
     if not part:
         raise HTTPException(status_code=404, detail="Part number not found")
@@ -198,7 +246,11 @@ def delete_part_number(part_id: int, db: Session = Depends(get_db)):
 # ==================== Order Number Endpoints ====================
 
 @app.post("/api/order-numbers", response_model=OrderNumberResponse)
-def create_order_number(data: OrderNumberCreate, db: Session = Depends(get_db)):
+def create_order_number(
+    data: OrderNumberCreate, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     existing = db.query(OrderNumber).filter(OrderNumber.order_number == data.order_number).first()
     if existing:
         raise HTTPException(status_code=400, detail="Order number already exists")
@@ -210,11 +262,18 @@ def create_order_number(data: OrderNumberCreate, db: Session = Depends(get_db)):
     return new_order
 
 @app.get("/api/order-numbers", response_model=List[OrderNumberResponse])
-def get_order_numbers(db: Session = Depends(get_db)):
+def get_order_numbers(
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     return db.query(OrderNumber).filter(OrderNumber.is_active == True).all()
 
 @app.delete("/api/order-numbers/{order_id}")
-def delete_order_number(order_id: int, db: Session = Depends(get_db)):
+def delete_order_number(
+    order_id: int, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     order = db.query(OrderNumber).filter(OrderNumber.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order number not found")
@@ -226,7 +285,11 @@ def delete_order_number(order_id: int, db: Session = Depends(get_db)):
 # ==================== Performance ID Endpoints ====================
 
 @app.post("/api/performance-ids", response_model=PerformanceIDResponse)
-def create_performance_id(data: PerformanceIDCreate, db: Session = Depends(get_db)):
+def create_performance_id(
+    data: PerformanceIDCreate, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     existing = db.query(PerformanceID).filter(PerformanceID.performance_id == data.performance_id).first()
     if existing:
         raise HTTPException(status_code=400, detail="Performance ID already exists")
@@ -238,11 +301,18 @@ def create_performance_id(data: PerformanceIDCreate, db: Session = Depends(get_d
     return new_perf
 
 @app.get("/api/performance-ids", response_model=List[PerformanceIDResponse])
-def get_performance_ids(db: Session = Depends(get_db)):
+def get_performance_ids(
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     return db.query(PerformanceID).filter(PerformanceID.is_active == True).all()
 
 @app.delete("/api/performance-ids/{perf_id}")
-def delete_performance_id(perf_id: int, db: Session = Depends(get_db)):
+def delete_performance_id(
+    perf_id: int, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     perf = db.query(PerformanceID).filter(PerformanceID.id == perf_id).first()
     if not perf:
         raise HTTPException(status_code=404, detail="Performance ID not found")
@@ -254,16 +324,15 @@ def delete_performance_id(perf_id: int, db: Session = Depends(get_db)):
 # ==================== Work Session Endpoints ====================
 
 @app.post("/api/work-sessions", response_model=WorkSessionResponse)
-def create_work_session(data: WorkSessionCreate, db: Session = Depends(get_db)):
-    # Note: machine_id should come from the authenticated session
-    # For now, using the first active machine
-    machine = db.query(BDEMachine).filter(BDEMachine.is_active == True).first()
-    if not machine:
-        raise HTTPException(status_code=400, detail="No active machine found")
-    
+def create_work_session(
+    data: WorkSessionCreate, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
+    # Use authenticated machine ID
     new_session = WorkSession(
         **data.model_dump(),
-        machine_id=machine.id
+        machine_id=current_machine.id
     )
     db.add(new_session)
     db.commit()
@@ -271,11 +340,18 @@ def create_work_session(data: WorkSessionCreate, db: Session = Depends(get_db)):
     return new_session
 
 @app.get("/api/work-sessions", response_model=List[WorkSessionResponse])
-def get_work_sessions(db: Session = Depends(get_db)):
+def get_work_sessions(
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     return db.query(WorkSession).all()
 
 @app.get("/api/work-sessions/user/{user_id}", response_model=List[WorkSessionResponse])
-def get_user_work_sessions(user_id: int, db: Session = Depends(get_db)):
+def get_user_work_sessions(
+    user_id: int, 
+    db: Session = Depends(get_db),
+    current_machine: BDEMachine = Depends(get_current_machine)
+):
     return db.query(WorkSession).filter(WorkSession.user_id == user_id).all()
 
 # Health check
