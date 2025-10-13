@@ -1,36 +1,47 @@
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import AdminDashboard from "@/components/AdminDashboard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import user1 from "@assets/stock_images/professional_factory_697daf75.jpg";
-import user2 from "@assets/stock_images/professional_factory_69cb87bb.jpg";
-import user3 from "@assets/stock_images/professional_factory_3bb8f823.jpg";
-import user4 from "@assets/stock_images/professional_factory_e84d08c3.jpg";
+import { apiClient } from "@/lib/api";
 
 export default function AdminPage() {
   const [, setLocation] = useLocation();
 
-  // TODO: remove mock functionality - fetch from database
-  const mockUsers = [
-    { id: "1", name: "John Smith", role: "Assembly Operator", imageUrl: user1 },
-    { id: "2", name: "Sarah Johnson", role: "Quality Inspector", imageUrl: user2 },
-    { id: "3", name: "Mike Chen", role: "Machine Operator", imageUrl: user3 },
-    { id: "4", name: "Emily Davis", role: "Line Supervisor", imageUrl: user4 },
-  ];
+  const { data: users = [] } = useQuery({
+    queryKey: ['/api/users'],
+    queryFn: () => apiClient.getUsers(),
+  });
 
-  const mockBDEMachines = [
-    { id: "1", machineId: "MACHINE-001", createdAt: "2024-01-15", lastLogin: "2024-10-13 10:30" },
-    { id: "2", machineId: "MACHINE-002", createdAt: "2024-02-20", lastLogin: "2024-10-12 14:15" },
-    { id: "3", machineId: "MACHINE-003", createdAt: "2024-03-10" },
-  ];
+  const { data: bdeMachines = [] } = useQuery({
+    queryKey: ['/api/machines'],
+    queryFn: () => apiClient.getMachines(),
+  });
 
-  const mockPartNumbers = ["PN-1001", "PN-1002", "PN-1003", "PN-1004", "PN-1005"];
-  const mockOrderNumbers = ["ORD-2024-001", "ORD-2024-002", "ORD-2024-003", "ORD-2024-004"];
-  const mockPerformanceIds = ["PERF-A", "PERF-B", "PERF-C", "PERF-D"];
+  const { data: partNumbersData = [] } = useQuery({
+    queryKey: ['/api/part-numbers'],
+    queryFn: () => apiClient.getPartNumbers(),
+  });
+
+  const { data: orderNumbersData = [] } = useQuery({
+    queryKey: ['/api/order-numbers'],
+    queryFn: () => apiClient.getOrderNumbers(),
+  });
+
+  const { data: performanceIdsData = [] } = useQuery({
+    queryKey: ['/api/performance-ids'],
+    queryFn: () => apiClient.getPerformanceIds(),
+  });
+
+  // Transform data to match component props
+  const partNumbers = partNumbersData.map((p: any) => p.part_number);
+  const orderNumbers = orderNumbersData.map((o: any) => o.order_number);
+  const performanceIds = performanceIdsData.map((p: any) => p.performance_id);
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 border-b glass-effect">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Button
@@ -47,11 +58,11 @@ export default function AdminPage() {
       </header>
 
       <AdminDashboard
-        users={mockUsers}
-        bdeMachines={mockBDEMachines}
-        partNumbers={mockPartNumbers}
-        orderNumbers={mockOrderNumbers}
-        performanceIds={mockPerformanceIds}
+        users={users}
+        bdeMachines={bdeMachines}
+        partNumbers={partNumbers}
+        orderNumbers={orderNumbers}
+        performanceIds={performanceIds}
       />
     </div>
   );
