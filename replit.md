@@ -178,12 +178,17 @@ api/
 
 ## Recent Changes
 
-**2024-10-13**: FastAPI backend implementation
+**2024-10-13**: FastAPI backend implementation & security hardening
 - Created complete REST API with all CRUD endpoints
 - Implemented JWT authentication for machine login
+- **Security Fixes Applied**:
+  - Added JWT authentication enforcement to ALL protected routes
+  - Created `get_current_machine` dependency for route protection  
+  - Fixed work session creation to inject machine_id from authenticated token
+  - Implemented frontend auth token persistence and rehydration
 - Set up PostgreSQL database with SQLAlchemy
-- Created API client for frontend integration
-- Updated admin dashboard to fetch real data
+- Created API client with Bearer token support
+- Connected admin dashboard to fetch real data from API
 - Enhanced UI design with gradients and animations
 
 ## Next Steps
@@ -195,10 +200,26 @@ api/
 5. 🔄 Implement session management
 6. 🔄 Add reporting/analytics features
 
+## Security Implementation
+
+### Authentication Flow
+1. **Machine Login**: POST to `/api/machines/login` with machine_id and password
+2. **Token Storage**: JWT token stored in localStorage via apiClient
+3. **Auto-load**: Tokens automatically rehydrated on app startup
+4. **Protected Routes**: All CRUD endpoints require valid Bearer token
+5. **Work Sessions**: Machine ID automatically injected from authenticated token
+
+### Protected Endpoints
+All endpoints except `/api/machines/login` and `/api/health` require JWT authentication:
+- BDE Machine management
+- User CRUD operations
+- Master data (part/order/performance)
+- Work session tracking
+
 ## Known Issues
 
-- FastAPI server needs to be started manually (backgrounding issue with uvicorn)
-- Frontend currently points to localhost:8000 (no environment variable configuration)
+- FastAPI server needs to be started manually in separate terminal (see Running the Application section above)
+- No role-based authorization yet (all authenticated machines have full access)
 
 ## User Preferences
 
