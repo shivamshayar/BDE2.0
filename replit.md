@@ -58,14 +58,39 @@ A comprehensive Business Data Entry (BDE) system for tracking factory worker per
 
 ## Running the Application
 
-### Start Both Servers
+### Option 1: Docker Compose (Recommended for Production)
 
-**Option 1: Using startup script**
+**Production:**
+```bash
+# Build and start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Seed database
+docker-compose exec backend python -m api.seed
+```
+
+**Development with hot reload:**
+```bash
+# Start with development configuration
+docker-compose -f docker-compose.dev.yml up
+
+# View logs
+docker-compose -f docker-compose.dev.yml logs -f
+```
+
+📖 **Full Docker documentation**: See [README.docker.md](README.docker.md)
+
+### Option 2: Manual Start (Development)
+
+**Using startup script:**
 ```bash
 ./start_all.sh
 ```
 
-**Option 2: Manual start**
+**Manual start:**
 
 Terminal 1 - FastAPI Backend (port 8000):
 ```bash
@@ -173,8 +198,29 @@ api/
 ├── schemas.py       # Pydantic schemas
 ├── database.py      # DB connection
 ├── auth.py          # JWT & password hashing
+├── dependencies.py  # Auth dependencies
 └── seed.py          # Database seeding
 ```
+
+## Docker Setup
+
+### Files
+```
+├── Dockerfile.backend       # FastAPI production image
+├── Dockerfile.frontend      # React/Vite production image
+├── docker-compose.yml       # Production orchestration
+├── docker-compose.dev.yml   # Development with hot reload
+├── nginx.conf              # Nginx config for frontend
+├── requirements-docker.txt  # Python dependencies
+├── .dockerignore           # Docker ignore patterns
+├── .env.example            # Environment template
+└── README.docker.md        # Docker documentation
+```
+
+### Services
+- **PostgreSQL**: postgres:15-alpine on port 5432
+- **Backend**: FastAPI with uvicorn on port 8000
+- **Frontend**: Nginx (prod) or Vite dev server (dev) on port 5000
 
 ## Recent Changes
 
