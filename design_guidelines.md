@@ -1,171 +1,173 @@
-# BDE Work Tracking System - Design Guidelines
+# BDE Work Tracking System - Enhanced Design Guidelines
 
 ## Design Approach
-**System Selection**: Material Design with industrial/manufacturing optimization
-**Rationale**: Function-focused productivity application requiring clarity, efficiency, and reliability in factory floor environments. Material Design provides robust component patterns for data-heavy interfaces while maintaining professional aesthetics.
+**System Selection**: Modern Industrial Design with Premium Material Elements
+**Rationale**: Professional BDE system requiring both functionality and visual appeal. Combines industrial reliability with modern aesthetics for an engaging user experience.
 
 ## Core Design Principles
-- **Clarity Over Aesthetics**: Every element serves a functional purpose
-- **Immediate Recognition**: Users should instantly understand their current state and available actions
+- **Visual Hierarchy**: Clear distinction between primary and secondary elements
+- **Professional Polish**: Subtle gradients, shadows, and animations for premium feel
 - **Touch-Optimized**: Large, accessible controls suitable for factory floor use
-- **Status Transparency**: Clear visual feedback for system state (logged in, timer running, data submitted)
+- **Modern Aesthetics**: Contemporary design with depth and dimension
 
 ## Color Palette
 
 **Light Mode (Primary Interface)**:
-- Primary: 210 100% 45% (Professional blue - trust and reliability)
-- Primary Hover: 210 100% 38%
-- Secondary: 150 65% 45% (Success green for start/active states)
-- Error/Stop: 0 85% 55% (Clear red for stop actions)
-- Surface: 0 0% 98% (Clean white background)
-- Surface Elevated: 0 0% 100%
-- Border: 220 15% 85%
-- Text Primary: 220 20% 15%
-- Text Secondary: 220 15% 45%
+- Primary: 210 100% 50% (Vibrant professional blue)
+- Primary Dark: 210 100% 42% (Depth variant)
+- Primary Light: 210 100% 95% (Subtle backgrounds)
+- Success/Active: 142 76% 45% (Professional green)
+- Accent: 260 60% 50% (Purple accent for highlights)
+- Surface: 0 0% 100% (Pure white)
+- Background: 220 15% 98% (Warm light gray)
+- Border: 220 15% 88%
+- Text Primary: 220 25% 12%
+- Text Secondary: 220 15% 40%
+- Text Tertiary: 220 10% 60%
 
 **Dark Mode**:
-- Primary: 210 95% 55%
-- Background: 220 25% 8%
-- Surface: 220 20% 12%
-- Surface Elevated: 220 18% 15%
-- Border: 220 15% 25%
-- Text Primary: 0 0% 95%
-- Text Secondary: 0 0% 70%
+- Primary: 210 100% 55%
+- Background: 220 30% 6%
+- Surface: 220 25% 10%
+- Surface Elevated: 220 22% 14%
+- Border: 220 15% 20%
+- Text Primary: 0 0% 98%
+- Text Secondary: 0 0% 75%
 
-**Status Colors**:
-- Timer Active: 150 70% 45% (Green glow effect)
-- Timer Stopped: 220 15% 55% (Neutral gray)
-- Session Active: 200 90% 50% (Blue indicator)
-- Warning: 38 92% 50% (Amber for alerts)
+**Gradient Accents**:
+- Primary Gradient: linear-gradient(135deg, hsl(210 100% 50%), hsl(220 90% 55%))
+- Success Gradient: linear-gradient(135deg, hsl(142 76% 45%), hsl(160 70% 50%))
+- Surface Gradient: linear-gradient(180deg, white, hsl(220 15% 98%))
+
+## Enhanced Visual Elements
+
+**Shadows & Depth**:
+- Floating elements: 0 4px 20px rgba(0,0,0,0.08)
+- Cards: 0 2px 12px rgba(0,0,0,0.06)
+- Buttons: 0 2px 8px rgba(0,0,0,0.1)
+- Active states: 0 8px 30px rgba(33,150,243,0.25)
+
+**Gradients & Overlays**:
+- Login card: Subtle gradient background
+- Timer active: Animated gradient border
+- Sidebar: Dark gradient with depth
+- Headers: Glass morphism effect (backdrop blur + semi-transparent)
+
+**Animations**:
+- Timer pulse: Smooth 2s breathing animation
+- Button hover: 200ms smooth lift
+- Card interactions: Scale + shadow transition
+- Page transitions: Fade with slight slide
 
 ## Typography
 
-**Font Families**:
-- Primary: 'Inter' (Google Fonts) - excellent readability, professional
-- Monospace: 'JetBrains Mono' - for timer display and IDs
+**Font System**:
+- Primary: 'Inter' (professional, clean)
+- Monospace: 'JetBrains Mono' (timer, IDs)
+- Font weights: 400 (regular), 500 (medium), 600 (semibold), 700 (bold)
 
-**Type Scale**:
-- Headings: 32px/36px (Page titles), 24px/32px (Section headers), 18px/24px (Card headers)
-- Body: 16px/24px (Primary text), 14px/20px (Secondary text)
-- Timer Display: 48px/56px Bold (Monospace)
-- Labels: 12px/16px Medium (Form labels, uppercase tracking-wide)
-- Buttons: 16px/24px Semibold
+**Type Scale** (Enhanced):
+- Page Title: 36px/44px Bold (with gradient text option)
+- Section Header: 28px/36px Semibold
+- Card Title: 20px/28px Semibold
+- Body: 16px/24px Regular
+- Timer Display: 56px/64px Bold Mono
+- Small Text: 14px/20px Regular
+- Micro Text: 12px/16px Medium
 
-## Layout System
+## Component Enhancements
 
-**Spacing Primitives**: Use Tailwind units of 2, 4, 8, 12, 16 for consistency
-- Card padding: p-8
-- Section spacing: space-y-8
-- Form field gaps: space-y-4
-- Button spacing: px-8 py-3
-- Container max-width: max-w-7xl
+**Login Page**:
+- Centered card with soft shadow
+- Logo/icon with gradient background
+- Smooth input focus states with glow
+- Primary button with gradient background
+- Animated error messages
 
-**Grid System**:
-- Login Page: Single centered card (max-w-md)
-- User Selection: 3-column grid on desktop (lg:grid-cols-3), 2-col tablet (md:grid-cols-2), single mobile
-- Work Tracking: Split layout - Left side (user info + timer), Right side (data entry form)
-- Dashboard: Responsive table layout with action columns
+**User Selection Cards**:
+- Elevated white cards with hover lift
+- Avatar with ring glow on selection
+- Gradient overlay on hover
+- Smooth scale transition
+- Selected state: Blue gradient border
 
-## Component Library
+**Compact Sidebar**:
+- Dark navy gradient background (210 100% 20% to 210 100% 15%)
+- Avatar rings with glow effect
+- Smooth transitions on hover
+- Active indicator with pulsing animation
+- Glass effect on settings button
 
-**Navigation & Headers**:
-- Top bar: Fixed header with machine ID, current user indicator, logout button
-- Breadcrumb navigation showing current step (Login → Select User → Work Tracking)
-- Session status badge (green dot + "Active Session" text)
-
-**Cards & Containers**:
-- Elevated cards with subtle shadow (shadow-md)
-- Border radius: rounded-xl for cards, rounded-lg for buttons
-- User selection cards: Image + name + role badge, hover state with scale transform
-- Work tracking card: Large, prominent with status indicator
-
-**Forms & Inputs**:
-- Large input fields: h-12 with clear labels above
-- Dropdown selects with search capability
-- Auto-complete for part numbers and order numbers
-- Clear visual states: default, focused (ring-2 ring-primary), error (ring-red-500), disabled
-- Required field indicators (red asterisk)
-
-**Buttons**:
-- Primary actions: bg-primary text-white, large size (h-12 px-8)
-- Start button: bg-green-600 with pulse animation when active
-- Stop button: bg-red-600, requires confirmation modal
-- Secondary actions: variant outline with border
-- Icon buttons for table actions: h-10 w-10 rounded-lg
-
-**Timer Component**:
-- Large monospace display (48px font)
-- Format: HH:MM:SS
-- Start state: Green background glow (bg-green-500/10)
-- Running state: Pulsing green border animation
-- Stopped state: Gray with no animation
-
-**Tables & Lists**:
-- Striped rows for readability (even:bg-gray-50)
-- Sticky header row
-- Action column always visible on right
-- Pagination controls at bottom
-- Search and filter bar above table
-
-**Modals & Overlays**:
-- Confirmation dialogs for critical actions (Stop timer, Logout)
-- Full-screen loading overlay during data submission
-- Success/error toast notifications (top-right position)
-
-## Page-Specific Layouts
-
-**Page 1 - Machine Login**:
-- Centered card on full-height page
-- Company logo/title at top
-- Machine ID and password fields stacked vertically
-- Large login button
-- Session conflict warning if machine already logged in elsewhere
-
-**Page 2 - User Selection**:
-- Search bar at top (sticky)
-- Grid of user cards with photos (150x150px rounded-full)
-- Card hover effect: subtle lift + shadow increase
-- User count indicator ("12 users available")
-- Selected state: blue border + checkmark overlay
-
-**Page 3 - Work Tracking**:
-- Two-column split (40/60)
-- Left: User profile card with large photo (200x200px), name, role, session info
-- Right: Form area with dropdowns and timer
-- Timer: Prominent top section with large display
-- Data entry: Stacked form fields below timer
-- Action buttons: Full-width Start/Stop at bottom
+**Work Tracker**:
+- User card: Elevated with gradient border top
+- Timer: Gradient border when active with glow
+- Form inputs: Subtle inner shadow, smooth focus states
+- Toggle buttons: Smooth color transitions
+- Start button: Green gradient with hover lift
+- Stop button: Red gradient with shake animation option
 
 **Admin Dashboard**:
-- Tabbed interface (Users | Orders | Performance IDs | Part Numbers)
-- Table view with CRUD actions
-- Add new button (top-right, always visible)
-- Inline editing for quick updates
-- Bulk actions toolbar when items selected
+- Tabbed interface with animated underline
+- Table rows: Subtle hover background
+- Action buttons: Smooth icon transitions
+- Glass effect header cards
+- Gradient accent on primary actions
 
-## Animations
-**Essential Only**:
-- Timer pulse: Subtle 2s infinite animation when running
-- Button interactions: Quick 150ms scale on click
-- Toast notifications: Slide-in from right (300ms)
-- Card hover: 200ms transform and shadow transition
-- NO page transitions or decorative animations
+## Interactive States
 
-## Images
-**User Photos**: 
-- Circular avatars throughout (rounded-full)
-- Selection page: 150x150px
-- Work tracking: 200x200px
-- Table rows: 40x40px
-- Fallback: Colored initials on gradient background
+**Buttons**:
+- Default: Solid color with soft shadow
+- Hover: Lift (translateY -2px) + shadow increase
+- Active: Slight press (translateY 1px)
+- Disabled: 50% opacity + no interaction
 
-**No Hero Images**: This is a utility application, not marketing
+**Cards**:
+- Default: White with subtle shadow
+- Hover: Shadow increase + slight lift
+- Selected: Gradient border + stronger shadow
 
-## Accessibility & Usability
-- Touch targets minimum 44x44px
-- High contrast ratios (WCAG AA minimum)
-- Keyboard navigation for all interactions
-- Focus indicators visible on all interactive elements
-- Loading states for all async operations
-- Error messages clear and actionable
-- Success confirmation for all data submissions
+**Inputs**:
+- Default: Light border
+- Focus: Primary color ring + glow
+- Error: Red ring + shake animation
+- Success: Green border with checkmark
+
+## Glass Morphism Elements
+
+**Header Navigation**:
+- Background: rgba(255,255,255,0.8)
+- Backdrop filter: blur(12px)
+- Border: 1px solid rgba(255,255,255,0.2)
+- Shadow: 0 2px 20px rgba(0,0,0,0.05)
+
+## Micro-interactions
+
+**Timer**:
+- Start: Pulse animation begins
+- Running: Breathing glow effect
+- Stop: Gentle fade out
+
+**User Selection**:
+- Click: Ripple effect from center
+- Selected: Smooth checkmark animation
+
+**Forms**:
+- Submit: Button expands slightly
+- Success: Green checkmark with bounce
+- Error: Red shake animation
+
+## Accessibility
+
+- Minimum 4.5:1 contrast ratio
+- Touch targets: 44x44px minimum
+- Focus indicators: 2px offset ring
+- Reduced motion support for animations
+- Clear error messages with icons
+
+## Professional Polish
+
+- Consistent 8px spacing grid
+- Rounded corners: 12px cards, 8px buttons
+- Consistent elevation system (2, 4, 8, 12, 20px)
+- Smooth transitions: 200ms for interactions, 300ms for layouts
+- Color consistency across all states

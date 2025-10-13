@@ -103,28 +103,41 @@ export default function MultiUserWorkTracker({
         <div className="grid lg:grid-cols-5 gap-8">
           {/* Left Column - User Info */}
           <div className="lg:col-span-2">
-            <Card className="p-8">
+            <Card className="p-8 shadow-xl border-t-4 border-t-primary">
               <div className="space-y-6">
                 <div className="flex flex-col items-center text-center space-y-4">
-                  <Avatar className="w-48 h-48">
-                    <AvatarImage src={session.userImage} alt={session.userName} />
-                    <AvatarFallback className="text-4xl">{initials}</AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="w-48 h-48 border-4 border-background shadow-2xl ring-4 ring-primary/20">
+                      <AvatarImage src={session.userImage} alt={session.userName} />
+                      <AvatarFallback className="text-5xl bg-gradient-to-br from-primary/20 to-accent/20">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    {session.isRunning && (
+                      <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center border-4 border-background shadow-lg animate-pulse">
+                        <span className="text-white text-xl">●</span>
+                      </div>
+                    )}
+                  </div>
                   <div>
-                    <h2 className="text-2xl font-bold" data-testid="text-user-name">
+                    <h2 className="text-3xl font-bold" data-testid="text-user-name">
                       {session.userName}
                     </h2>
-                    <Badge variant="secondary" className="mt-2" data-testid="badge-user-role">
+                    <Badge variant="secondary" className="mt-3 text-base px-4 py-1" data-testid="badge-user-role">
                       {session.userRole}
                     </Badge>
                   </div>
                 </div>
 
                 <div className="pt-6 border-t">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Session Status</span>
-                    <Badge variant={session.isRunning ? "default" : "secondary"} data-testid="badge-session-status">
-                      {session.isRunning ? "Active" : "Idle"}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">Session Status</span>
+                    <Badge 
+                      variant={session.isRunning ? "default" : "secondary"} 
+                      className="text-sm font-semibold"
+                      data-testid="badge-session-status"
+                    >
+                      {session.isRunning ? "🟢 Active" : "⏸️ Idle"}
                     </Badge>
                   </div>
                 </div>
@@ -142,7 +155,7 @@ export default function MultiUserWorkTracker({
             />
 
             {/* Data Entry Form */}
-            <Card className="p-8">
+            <Card className="p-8 shadow-xl">
               <div className="space-y-6">
                 <FlexibleInput
                   id={`partNumber-${session.id}`}
@@ -177,22 +190,22 @@ export default function MultiUserWorkTracker({
                 <div className="pt-4 space-y-4">
                   {!session.isRunning ? (
                     <Button
-                      className="w-full h-12 bg-green-600 hover:bg-green-700"
+                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-0.5"
                       onClick={handleStart}
                       disabled={!canStart}
                       data-testid="button-start"
                     >
-                      <Play className="w-5 h-5 mr-2" />
+                      <Play className="w-6 h-6 mr-2" />
                       Start Work
                     </Button>
                   ) : (
                     <Button
                       variant="destructive"
-                      className="w-full h-12"
+                      className="w-full h-14 text-lg font-bold shadow-xl hover:shadow-2xl transition-all hover:-translate-y-0.5"
                       onClick={handleStop}
                       data-testid="button-stop"
                     >
-                      <Square className="w-5 h-5 mr-2" />
+                      <Square className="w-6 h-6 mr-2" />
                       Stop Work
                     </Button>
                   )}

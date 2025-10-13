@@ -23,15 +23,15 @@ export default function MachineLoginForm({ onLogin, error }: MachineLoginFormPro
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Lock className="w-8 h-8 text-primary" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+      <Card className="w-full max-w-md shadow-2xl border-0">
+        <CardHeader className="space-y-4 text-center pb-8">
+          <div className="mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
+            <Lock className="w-10 h-10 text-primary-foreground" />
           </div>
           <div>
-            <CardTitle className="text-2xl">BDE Work Tracking</CardTitle>
-            <CardDescription className="mt-2">
+            <CardTitle className="text-3xl font-bold gradient-text">BDE Work Tracking</CardTitle>
+            <CardDescription className="mt-3 text-base">
               Sign in to your machine to start tracking work
             </CardDescription>
           </div>
@@ -39,14 +39,14 @@ export default function MachineLoginForm({ onLogin, error }: MachineLoginFormPro
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="machineId">Machine ID</Label>
+              <Label htmlFor="machineId" className="text-sm font-semibold">Machine ID</Label>
               <Input
                 id="machineId"
                 data-testid="input-machine-id"
@@ -54,13 +54,13 @@ export default function MachineLoginForm({ onLogin, error }: MachineLoginFormPro
                 placeholder="Enter machine ID"
                 value={machineId}
                 onChange={(e) => setMachineId(e.target.value)}
-                className="h-12"
+                className="h-12 border-2 focus:border-primary transition-colors"
                 required
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-sm font-semibold">Password</Label>
               <Input
                 id="password"
                 data-testid="input-password"
@@ -68,14 +68,14 @@ export default function MachineLoginForm({ onLogin, error }: MachineLoginFormPro
                 placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-12"
+                className="h-12 border-2 focus:border-primary transition-colors"
                 required
               />
             </div>
 
             <Button 
               type="submit" 
-              className="w-full h-12"
+              className="w-full h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
               data-testid="button-login"
             >
               Sign In

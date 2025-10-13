@@ -44,18 +44,18 @@ export default function UserSelectionPage({
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4">
+      <header className="sticky top-0 z-50 border-b glass-effect">
+        <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-semibold">BDE Work Tracking</h1>
-              <Badge variant="outline" data-testid="badge-machine-id">
+              <h1 className="text-2xl font-bold gradient-text">BDE Work Tracking</h1>
+              <Badge variant="outline" className="text-base px-4 py-1 font-mono font-semibold border-2" data-testid="badge-machine-id">
                 {machineId}
               </Badge>
             </div>
-            <Button variant="outline" onClick={onLogout} data-testid="button-logout">
+            <Button variant="outline" onClick={onLogout} className="shadow-md hover:shadow-lg transition-all" data-testid="button-logout">
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
@@ -64,28 +64,28 @@ export default function UserSelectionPage({
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-6 py-12">
         <div className="space-y-8">
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Select Your Profile</h2>
-            <div className="flex items-center gap-4">
+          <div className="space-y-6">
+            <h2 className="text-4xl font-bold">Select Your Profile</h2>
+            <div className="flex items-center gap-4 flex-wrap">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   placeholder="Search by name or role..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 h-12"
+                  className="pl-12 h-14 text-base border-2 focus:border-primary shadow-md"
                   data-testid="input-search-users"
                 />
               </div>
-              <Badge variant="secondary" data-testid="badge-user-count">
-                {filteredUsers.length} users
+              <Badge variant="secondary" className="text-base px-5 py-2 font-semibold" data-testid="badge-user-count">
+                {filteredUsers.length} {filteredUsers.length === 1 ? 'user' : 'users'}
               </Badge>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredUsers.map((user) => (
               <UserSelectionCard
                 key={user.id}
@@ -100,8 +100,11 @@ export default function UserSelectionPage({
           </div>
 
           {filteredUsers.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No users found matching your search.</p>
+            <div className="text-center py-20">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                <Search className="w-10 h-10 text-muted-foreground" />
+              </div>
+              <p className="text-xl text-muted-foreground">No users found matching your search.</p>
             </div>
           )}
         </div>

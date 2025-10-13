@@ -44,21 +44,35 @@ export default function Timer({ isRunning, duration, onDurationChange }: TimerPr
 
   return (
     <div
-      className={`p-8 rounded-xl ${
+      className={`p-10 rounded-2xl transition-all duration-300 ${
         isRunning
-          ? "bg-green-500/10 ring-2 ring-green-500/50 animate-pulse"
-          : "bg-muted"
+          ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-2 border-green-500/50 timer-active"
+          : "bg-muted/50 border-2 border-transparent"
       }`}
       data-testid="timer-display"
     >
-      <div className="flex items-center justify-center gap-4">
-        <Clock className={`w-8 h-8 ${isRunning ? "text-green-600" : "text-muted-foreground"}`} />
-        <div className="font-mono text-5xl font-bold" data-testid="text-timer">
+      <div className="flex items-center justify-center gap-6">
+        <div className={`p-4 rounded-xl transition-all ${
+          isRunning 
+            ? "bg-green-500 shadow-lg shadow-green-500/30" 
+            : "bg-muted"
+        }`}>
+          <Clock className={`w-10 h-10 ${isRunning ? "text-white" : "text-muted-foreground"}`} />
+        </div>
+        <div className={`font-mono text-6xl font-bold tracking-tight ${
+          isRunning ? "text-green-600 dark:text-green-400" : "text-foreground"
+        }`} data-testid="text-timer">
           {formatTime(hours)}:{formatTime(minutes)}:{formatTime(secs)}
         </div>
       </div>
-      <div className="text-center mt-4 text-sm text-muted-foreground">
-        {isRunning ? "Timer Running" : "Timer Stopped"}
+      <div className="text-center mt-6">
+        <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${
+          isRunning 
+            ? "bg-green-500 text-white shadow-md" 
+            : "bg-muted text-muted-foreground"
+        }`}>
+          {isRunning ? "🟢 Timer Running" : "⏸️ Timer Stopped"}
+        </span>
       </div>
     </div>
   );

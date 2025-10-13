@@ -29,31 +29,41 @@ export default function UserSelectionCard({
 
   return (
     <Card
-      className={`relative cursor-pointer transition-all hover-elevate ${
-        selected ? "ring-2 ring-primary" : ""
+      className={`relative cursor-pointer transition-all duration-200 hover:-translate-y-1 border-2 ${
+        selected 
+          ? "ring-4 ring-primary/20 border-primary shadow-xl" 
+          : "border-transparent shadow-md hover:shadow-xl"
       }`}
       onClick={onClick}
       data-testid={`card-user-${id}`}
     >
       {selected && (
-        <div className="absolute top-3 right-3 z-10">
-          <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-            <Check className="w-4 h-4 text-primary-foreground" />
+        <div className="absolute top-4 right-4 z-10">
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg">
+            <Check className="w-5 h-5 text-primary-foreground" />
           </div>
         </div>
       )}
       
-      <div className="p-6 flex flex-col items-center text-center space-y-4">
-        <Avatar className="w-32 h-32">
-          <AvatarImage src={imageUrl} alt={name} />
-          <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
-        </Avatar>
+      <div className="p-8 flex flex-col items-center text-center space-y-4">
+        <div className={`relative ${selected ? 'ring-4 ring-primary/30 rounded-full' : ''}`}>
+          <Avatar className="w-36 h-36 border-4 border-background shadow-lg">
+            <AvatarImage src={imageUrl} alt={name} />
+            <AvatarFallback className="text-3xl bg-gradient-to-br from-primary/20 to-accent/20">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        </div>
         
-        <div className="space-y-2">
-          <h3 className="font-semibold text-lg" data-testid={`text-username-${id}`}>
+        <div className="space-y-3">
+          <h3 className="font-bold text-xl" data-testid={`text-username-${id}`}>
             {name}
           </h3>
-          <Badge variant="secondary" data-testid={`badge-role-${id}`}>
+          <Badge 
+            variant="secondary" 
+            className="text-sm px-4 py-1 font-medium"
+            data-testid={`badge-role-${id}`}
+          >
             {role}
           </Badge>
         </div>
