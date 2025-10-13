@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Use relative URL since Express proxies /api/* to FastAPI on port 8000
+const API_BASE_URL = '';
 
 class ApiClient {
   private token: string | null = null;
