@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Plus, Settings } from "lucide-react";
@@ -6,6 +7,16 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface UserSession {
   id: string;
@@ -24,6 +35,7 @@ interface CompactSessionsSidebarProps {
   activeSessionId?: string;
   onSelectSession?: (sessionId: string) => void;
   onAddSession?: () => void;
+  onRemoveSession?: (sessionId: string) => void;
   onSettings?: () => void;
 }
 
@@ -32,13 +44,42 @@ export default function CompactSessionsSidebar({
   activeSessionId,
   onSelectSession,
   onAddSession,
+  onRemoveSession,
   onSettings,
 }: CompactSessionsSidebarProps) {
+  const [longPressSession, setLongPressSession] = useState<string | null>(null);
+  const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
+
+  const handleMouseDown = (sessionId: string, isRunning: boolean) => {
+    if (isRunning) return; // Don't allow removal if timer is running
+    
+    const timer = setTimeout(() => {
+      setLongPressSession(sessionId);
+    }, 800); // 800ms for long press
+    setPressTimer(timer);
+  };
+
+  const handleMouseUp = () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      setPressTimer(null);
+    }
+  };
+
+  const handleRemove = () => {
+    if (longPressSession && onRemoveSession) {
+      onRemoveSession(longPressSession);
+      setLongPressSession(null);
+    }
+  };
+
+  const selectedSession = sessions.find(s => s.id === longPressSession);
+
   return (
     <div className="w-20 bg-gradient-to-b from-sidebar to-sidebar/90 flex flex-col items-center py-6 gap-4 shadow-xl">
       {/* Active Sessions */}
       <div className="flex-1 flex flex-col items-center gap-4">
-        {sessions.map((session, index) => {
+        {sessions.map((session) => {
           const isActive = activeSessionId === session.id;
           const initials = session.userName
             .split(" ")
@@ -52,6 +93,11 @@ export default function CompactSessionsSidebar({
               <TooltipTrigger asChild>
                 <button
                   onClick={() => onSelectSession?.(session.id)}
+                  onMouseDown={() => handleMouseDown(session.id, session.isRunning)}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  onTouchStart={() => handleMouseDown(session.id, session.isRunning)}
+                  onTouchEnd={handleMouseUp}
                   className={`relative group transition-all duration-200 ${
                     isActive ? "scale-110" : "opacity-80 hover:opacity-100 hover:scale-105"
                   }`}
@@ -80,6 +126,9 @@ export default function CompactSessionsSidebar({
                   <div className="text-xs text-muted-foreground">{session.userRole}</div>
                   {session.isRunning && (
                     <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">● Timer Running</div>
+                  )}
+                  {!session.isRunning && (
+                    <div className="text-xs text-muted-foreground mt-1">Long press to remove</div>
                   )}
                 </div>
               </TooltipContent>
@@ -123,6 +172,24 @@ export default function CompactSessionsSidebar({
           <p className="text-sm font-medium">Settings</p>
         </TooltipContent>
       </Tooltip>
+
+      {/* Remove Confirmation Dialog */}
+      <AlertDialog open={!!longPressSession} onOpenChange={(open) => !open && setLongPressSession(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove User Session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove {selectedSession?.userName} from the active sessions. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-remove">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRemove} data-testid="button-confirm-remove">
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

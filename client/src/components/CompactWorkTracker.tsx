@@ -36,6 +36,8 @@ interface CompactWorkTrackerProps {
   orderNumbers: string[];
   performanceIds: string[];
   recentPartNumbers?: string[];
+  recentOrderNumbers?: string[];
+  recentPerformanceIds?: string[];
   onUpdateSession?: (sessionId: string, updates: Partial<UserSession>) => void;
   onStopSession?: (sessionId: string, data: {
     partNumber: string;
@@ -53,6 +55,8 @@ export default function CompactWorkTracker({
   orderNumbers,
   performanceIds,
   recentPartNumbers = [],
+  recentOrderNumbers = [],
+  recentPerformanceIds = [],
   onUpdateSession,
   onStopSession,
 }: CompactWorkTrackerProps) {
@@ -92,6 +96,13 @@ export default function CompactWorkTracker({
         duration: localDuration,
       });
     }
+    // Reset duration and fields after stopping
+    onUpdateSession?.(session.id, {
+      duration: 0,
+      partNumber: "",
+      orderNumber: "",
+      performanceId: "",
+    });
     setShowStopDialog(false);
   };
 
@@ -263,23 +274,68 @@ export default function CompactWorkTracker({
             </div>
           </div>
 
-          {/* Recent Part Numbers */}
-          {recentPartNumbers.length > 0 && !session.isRunning && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-muted-foreground">Recent Parts</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {recentPartNumbers.map((part) => (
-                  <Button
-                    key={part}
-                    variant="outline"
-                    className="h-14 text-lg font-bold border-2 hover:border-primary"
-                    onClick={() => onUpdateSession?.(session.id, { partNumber: part })}
-                    data-testid={`button-recent-${part}`}
-                  >
-                    {part}
-                  </Button>
-                ))}
-              </div>
+          {/* Recent Items */}
+          {!session.isRunning && (
+            <div className="space-y-6">
+              {/* Recent Part Numbers */}
+              {recentPartNumbers.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Recent Part Numbers</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {recentPartNumbers.map((part) => (
+                      <Button
+                        key={part}
+                        variant="outline"
+                        className="h-12 text-base font-bold border-2 hover:border-primary"
+                        onClick={() => onUpdateSession?.(session.id, { partNumber: part })}
+                        data-testid={`button-recent-part-${part}`}
+                      >
+                        {part}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Order Numbers */}
+              {recentOrderNumbers.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Recent Order Numbers</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {recentOrderNumbers.map((order) => (
+                      <Button
+                        key={order}
+                        variant="outline"
+                        className="h-12 text-base font-bold border-2 hover:border-primary"
+                        onClick={() => onUpdateSession?.(session.id, { orderNumber: order })}
+                        data-testid={`button-recent-order-${order}`}
+                      >
+                        {order}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Performance IDs */}
+              {recentPerformanceIds.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Recent Performance IDs</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {recentPerformanceIds.map((perf) => (
+                      <Button
+                        key={perf}
+                        variant="outline"
+                        className="h-12 text-base font-bold border-2 hover:border-primary"
+                        onClick={() => onUpdateSession?.(session.id, { performanceId: perf })}
+                        data-testid={`button-recent-perf-${perf}`}
+                      >
+                        {perf}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

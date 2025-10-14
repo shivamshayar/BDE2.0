@@ -50,6 +50,8 @@ export default function WorkTrackerPage() {
   const mockOrderNumbers = ["ORD-2024-001", "ORD-2024-002", "ORD-2024-003", "ORD-2024-004"];
   const mockPerformanceIds = ["PERF-A", "PERF-B", "PERF-C", "PERF-D"];
   const mockRecentParts = ["P-101", "P50-", "P-103", "P-104"];
+  const mockRecentOrders = ["ORD-2024-001", "ORD-2024-002", "ORD-2024-003"];
+  const mockRecentPerformance = ["PERF-A", "PERF-B", "PERF-C"];
 
   // TODO: remove mock functionality - manage in state/context
   const [sessions, setSessions] = useState<UserSession[]>([
@@ -85,15 +87,7 @@ export default function WorkTrackerPage() {
       title: "Work Session Completed",
       description: `Duration: ${Math.floor(data.duration / 60)}m ${data.duration % 60}s`,
     });
-    
-    // Remove session after completion
-    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-    
-    // Switch to another session if available
-    if (sessions.length > 1) {
-      const remainingSessions = sessions.filter((s) => s.id !== sessionId);
-      setActiveSessionId(remainingSessions[0].id);
-    }
+    // Keep user in session, don't remove
   };
 
   const handleAddSession = (user: any) => {
@@ -110,13 +104,31 @@ export default function WorkTrackerPage() {
       performanceId: "",
     };
     
-    setSessions((prev) => [...prev, newSession]);
+    // Add new user to the top of the list
+    setSessions((prev) => [newSession, ...prev]);
     setActiveSessionId(newSession.id);
     setShowAddUserDialog(false);
     
     toast({
       title: "User Added",
       description: `${user.name} has been added to the active sessions.`,
+    });
+  };
+
+  const handleRemoveSession = (sessionId: string) => {
+    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    
+    // Switch to another session if available
+    if (sessions.length > 1) {
+      const remainingSessions = sessions.filter((s) => s.id !== sessionId);
+      setActiveSessionId(remainingSessions[0].id);
+    } else {
+      setActiveSessionId("");
+    }
+    
+    toast({
+      title: "User Removed",
+      description: "User has been removed from active sessions.",
     });
   };
 
@@ -132,6 +144,7 @@ export default function WorkTrackerPage() {
         activeSessionId={activeSessionId}
         onSelectSession={setActiveSessionId}
         onAddSession={() => setShowAddUserDialog(true)}
+        onRemoveSession={handleRemoveSession}
         onSettings={() => setLocation("/admin")}
       />
 
@@ -144,6 +157,8 @@ export default function WorkTrackerPage() {
           orderNumbers={mockOrderNumbers}
           performanceIds={mockPerformanceIds}
           recentPartNumbers={mockRecentParts}
+          recentOrderNumbers={mockRecentOrders}
+          recentPerformanceIds={mockRecentPerformance}
           onUpdateSession={handleUpdateSession}
           onStopSession={handleStopSession}
         />
