@@ -45,7 +45,7 @@ interface AdminDashboardProps {
   orderNumbers?: string[];
   performanceIds?: string[];
   bdeMachines?: BDEMachine[];
-  onAddUser?: (name: string, role: string) => Promise<void>;
+  onAddUser?: (name: string, role: string, imageUrl: string | null) => Promise<void>;
   onAddMachine?: (machineId: string, password: string, department: string) => Promise<void>;
   onAddPartNumber?: (partNumber: string) => Promise<void>;
   onAddOrderNumber?: (orderNumber: string) => Promise<void>;
@@ -83,6 +83,9 @@ export default function AdminDashboard({
     newPassword: "",
     confirmPassword: "",
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const filteredUsers = users.filter((user) =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -104,7 +107,48 @@ export default function AdminDashboard({
       newPassword: "",
       confirmPassword: "",
     });
+    setSelectedImage(null);
+    setImagePreview("");
     setShowAddDialog(true);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!selectedImage) return null;
+
+    const formData = new FormData();
+    formData.append("image", selectedImage);
+
+    try {
+      setIsUploadingImage(true);
+      const response = await fetch("/api/upload/user-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload image");
+      }
+
+      const data = await response.json();
+      return data.imageUrl;
+    } catch (error) {
+      console.error("Image upload error:", error);
+      return null;
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const handleSubmitAdd = async () => {
@@ -121,7 +165,18 @@ export default function AdminDashboard({
           alert("Please fill all fields");
           return;
         }
-        await onAddUser?.(formData.name, formData.role);
+        
+        // Upload image if selected
+        let imageUrl = null;
+        if (selectedImage) {
+          imageUrl = await uploadImage();
+          if (!imageUrl) {
+            alert("Failed to upload image");
+            return;
+          }
+        }
+        
+        await onAddUser?.(formData.name, formData.role, imageUrl);
       } else if (activeTab === "parts") {
         if (!formData.name) {
           alert("Please enter a part number");
@@ -515,6 +570,25 @@ export default function AdminDashboard({
                       onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
                       data-testid="input-add-role" 
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="image">Profile Image (optional)</Label>
+                    <Input 
+                      id="image" 
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      data-testid="input-add-image" 
+                    />
+                    {imagePreview && (
+                      <div className="mt-2">
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          className="w-24 h-24 object-cover rounded-lg border"
+                        />
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (

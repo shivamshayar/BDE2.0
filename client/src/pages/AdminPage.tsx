@@ -153,8 +153,8 @@ export default function AdminPage() {
     },
   });
 
-  const handleAddUser = async (name: string, role: string) => {
-    await createUserMutation.mutateAsync({ name, role, isActive: true });
+  const handleAddUser = async (name: string, role: string, imageUrl: string | null) => {
+    await createUserMutation.mutateAsync({ name, role, imageUrl, isActive: true });
   };
 
   const handleAddMachine = async (machineId: string, password: string, department: string) => {
