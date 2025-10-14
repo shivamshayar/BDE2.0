@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import CompactSessionsSidebar from "@/components/CompactSessionsSidebar";
 import MultiUserWorkTracker from "@/components/MultiUserWorkTracker";
 import { Button } from "@/components/ui/button";
@@ -14,8 +13,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import UserSelectionCard from "@/components/UserSelectionCard";
-import { apiClient } from "@/lib/api";
-import { queryClient } from "@/lib/queryClient";
+import user1 from "@assets/stock_images/professional_factory_697daf75.jpg";
+import user2 from "@assets/stock_images/professional_factory_69cb87bb.jpg";
+import user3 from "@assets/stock_images/professional_factory_3bb8f823.jpg";
+import user4 from "@assets/stock_images/professional_factory_e84d08c3.jpg";
+import user5 from "@assets/stock_images/professional_factory_ba70ba6b.jpg";
+import user6 from "@assets/stock_images/professional_factory_3ce76da2.jpg";
 
 interface UserSession {
   id: string;
@@ -35,64 +38,35 @@ export default function WorkTrackerPage() {
   const { toast } = useToast();
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
 
-  // Fetch real data from API
-  const { data: users = [] } = useQuery({
-    queryKey: ['/api/users'],
-    queryFn: () => apiClient.getUsers(),
-  });
+  // TODO: remove mock functionality - get from database
+  const availableUsers = [
+    { id: "1", name: "John Smith", role: "Assembly Operator", imageUrl: user1 },
+    { id: "2", name: "Sarah Johnson", role: "Quality Inspector", imageUrl: user2 },
+    { id: "3", name: "Mike Chen", role: "Machine Operator", imageUrl: user3 },
+    { id: "4", name: "Emily Davis", role: "Line Supervisor", imageUrl: user4 },
+    { id: "5", name: "Robert Wilson", role: "Assembly Operator", imageUrl: user5 },
+    { id: "6", name: "Lisa Anderson", role: "Quality Control", imageUrl: user6 },
+  ];
 
-  const { data: partNumbersData = [] } = useQuery({
-    queryKey: ['/api/part-numbers'],
-    queryFn: () => apiClient.getPartNumbers(),
-  });
+  const mockPartNumbers = ["PN-1001", "PN-1002", "PN-1003", "PN-1004", "PN-1005"];
+  const mockOrderNumbers = ["ORD-2024-001", "ORD-2024-002", "ORD-2024-003", "ORD-2024-004"];
+  const mockPerformanceIds = ["PERF-A", "PERF-B", "PERF-C", "PERF-D"];
 
-  const { data: orderNumbersData = [] } = useQuery({
-    queryKey: ['/api/order-numbers'],
-    queryFn: () => apiClient.getOrderNumbers(),
-  });
-
-  const { data: performanceIdsData = [] } = useQuery({
-    queryKey: ['/api/performance-ids'],
-    queryFn: () => apiClient.getPerformanceIds(),
-  });
-
-  // Transform data to simple string arrays
-  const partNumbers = partNumbersData.map((p: any) => p.part_number);
-  const orderNumbers = orderNumbersData.map((o: any) => o.order_number);
-  const performanceIds = performanceIdsData.map((p: any) => p.performance_id);
-
-  // Work session submission mutation
-  const createWorkSessionMutation = useMutation({
-    mutationFn: (sessionData: any) => apiClient.createWorkSession(sessionData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/work-sessions'] });
+  // TODO: remove mock functionality - manage in state/context
+  const [sessions, setSessions] = useState<UserSession[]>([
+    {
+      id: "session-1",
+      userId: "1",
+      userName: "John Smith",
+      userRole: "Assembly Operator",
+      userImage: user1,
+      isRunning: false,
+      duration: 0,
+      partNumber: "",
+      orderNumber: "",
+      performanceId: "",
     },
-  });
-
-  // Initialize sessions from selected user in localStorage
-  const [sessions, setSessions] = useState<UserSession[]>(() => {
-    const selectedUser = localStorage.getItem('selected_user');
-    if (selectedUser) {
-      try {
-        const user = JSON.parse(selectedUser);
-        return [{
-          id: `session-${Date.now()}`,
-          userId: user.id,
-          userName: user.name,
-          userRole: user.role,
-          userImage: user.imageUrl,
-          isRunning: false,
-          duration: 0,
-          partNumber: "",
-          orderNumber: "",
-          performanceId: "",
-        }];
-      } catch (e) {
-        return [];
-      }
-    }
-    return [];
-  });
+  ]);
 
   const [activeSessionId, setActiveSessionId] = useState<string>("session-1");
 
@@ -106,44 +80,20 @@ export default function WorkTrackerPage() {
     );
   };
 
-  const handleStopSession = async (sessionId: string, data: any) => {
-    const session = sessions.find((s) => s.id === sessionId);
-    if (!session) return;
-
-    const startTime = new Date(Date.now() - data.duration * 1000);
-    const endTime = new Date();
-
-    try {
-      // Submit work session to API
-      await createWorkSessionMutation.mutateAsync({
-        user_id: parseInt(session.userId),
-        part_number: data.partNumber,
-        order_number: data.orderNumber,
-        performance_id: data.performanceId,
-        duration_seconds: data.duration,
-        start_time: startTime.toISOString(),
-        end_time: endTime.toISOString(),
-      });
-
-      toast({
-        title: "Work Session Saved",
-        description: `Duration: ${Math.floor(data.duration / 60)}m ${data.duration % 60}s`,
-      });
-
-      // Remove session after successful save
-      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-
-      // Switch to another session if available
-      if (sessions.length > 1) {
-        const remainingSessions = sessions.filter((s) => s.id !== sessionId);
-        setActiveSessionId(remainingSessions[0].id);
-      }
-    } catch (error) {
-      toast({
-        title: "Error Saving Session",
-        description: error instanceof Error ? error.message : "Failed to save work session",
-        variant: "destructive",
-      });
+  const handleStopSession = (sessionId: string, data: any) => {
+    console.log("Work session completed:", data);
+    toast({
+      title: "Work Session Completed",
+      description: `Duration: ${Math.floor(data.duration / 60)}m ${data.duration % 60}s`,
+    });
+    
+    // Remove session after completion
+    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    
+    // Switch to another session if available
+    if (sessions.length > 1) {
+      const remainingSessions = sessions.filter((s) => s.id !== sessionId);
+      setActiveSessionId(remainingSessions[0].id);
     }
   };
 
@@ -171,16 +121,8 @@ export default function WorkTrackerPage() {
     });
   };
 
-  // Map API users to component format
-  const formattedUsers = users.map((user: any) => ({
-    id: user.id.toString(),
-    name: user.name,
-    role: user.role,
-    imageUrl: user.image_url || undefined,
-  }));
-
   // Filter out users who already have active sessions
-  const availableUsersToAdd = formattedUsers.filter(
+  const availableUsersToAdd = availableUsers.filter(
     (user) => !sessions.some((session) => session.userId === user.id)
   );
 
@@ -214,9 +156,9 @@ export default function WorkTrackerPage() {
         {activeSession ? (
           <MultiUserWorkTracker
             session={activeSession}
-            partNumbers={partNumbers}
-            orderNumbers={orderNumbers}
-            performanceIds={performanceIds}
+            partNumbers={mockPartNumbers}
+            orderNumbers={mockOrderNumbers}
+            performanceIds={mockPerformanceIds}
             onUpdateSession={handleUpdateSession}
             onStopSession={handleStopSession}
           />

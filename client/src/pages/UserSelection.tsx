@@ -1,65 +1,40 @@
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
 import UserSelectionPage from "@/components/UserSelectionPage";
-import { apiClient } from "@/lib/api";
-import { Skeleton } from "@/components/ui/skeleton";
+import user1 from "@assets/stock_images/professional_factory_697daf75.jpg";
+import user2 from "@assets/stock_images/professional_factory_69cb87bb.jpg";
+import user3 from "@assets/stock_images/professional_factory_3bb8f823.jpg";
+import user4 from "@assets/stock_images/professional_factory_e84d08c3.jpg";
+import user5 from "@assets/stock_images/professional_factory_ba70ba6b.jpg";
+import user6 from "@assets/stock_images/professional_factory_3ce76da2.jpg";
 
 export default function UserSelection() {
   const [, setLocation] = useLocation();
 
-  // Fetch real users from API
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: ['/api/users'],
-    queryFn: () => apiClient.getUsers(),
-  });
-
-  // Get machine ID from localStorage
-  const machineId = localStorage.getItem('machine_id') || '';
+  // TODO: remove mock functionality - fetch from database
+  const mockUsers = [
+    { id: "1", name: "John Smith", role: "Assembly Operator", imageUrl: user1 },
+    { id: "2", name: "Sarah Johnson", role: "Quality Inspector", imageUrl: user2 },
+    { id: "3", name: "Mike Chen", role: "Machine Operator", imageUrl: user3 },
+    { id: "4", name: "Emily Davis", role: "Line Supervisor", imageUrl: user4 },
+    { id: "5", name: "Robert Wilson", role: "Assembly Operator", imageUrl: user5 },
+    { id: "6", name: "Lisa Anderson", role: "Quality Control", imageUrl: user6 },
+  ];
 
   const handleSelectUser = (user: any) => {
-    // Store selected user in localStorage for work tracker
-    localStorage.setItem('selected_user', JSON.stringify({
-      id: user.id,
-      name: user.name,
-      role: user.role,
-      imageUrl: user.image_url
-    }));
+    console.log("User selected:", user);
+    // TODO: Store selected user in context/state
     setLocation("/work-tracker");
   };
 
   const handleLogout = () => {
-    apiClient.clearAuth();
-    localStorage.removeItem('selected_user');
+    console.log("Logging out");
     setLocation("/");
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <Skeleton className="h-12 w-64 mx-auto" />
-          <div className="grid grid-cols-3 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Skeleton key={i} className="h-48 w-48" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Map API user data to component format
-  const formattedUsers = users.map((user: any) => ({
-    id: user.id.toString(),
-    name: user.name,
-    role: user.role,
-    imageUrl: user.image_url || undefined
-  }));
-
   return (
     <UserSelectionPage
-      users={formattedUsers}
-      machineId={machineId}
+      users={mockUsers}
+      machineId="MACHINE-001"
       onSelectUser={handleSelectUser}
       onLogout={handleLogout}
     />
