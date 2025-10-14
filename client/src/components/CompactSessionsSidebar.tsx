@@ -65,13 +65,8 @@ export default function CompactSessionsSidebar({
                       {initials}
                     </AvatarFallback>
                   </Avatar>
-                  
-                  {/* Number Badge */}
-                  <div className="absolute -top-1.5 -right-1.5 w-7 h-7 bg-white text-sidebar rounded-full flex items-center justify-center text-xs font-bold border-2 border-sidebar shadow-md">
-                    {index + 1}
-                  </div>
 
-                  {/* Running Indicator */}
+                  {/* Running Indicator - Green Dot */}
                   {session.isRunning && (
                     <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
                       <div className="w-3.5 h-3.5 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50" />
