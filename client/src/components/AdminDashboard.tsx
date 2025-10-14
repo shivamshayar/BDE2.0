@@ -22,7 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, Users, Package, Activity, ClipboardList, Search, Monitor, Key } from "lucide-react";
+import { Plus, Trash2, Users, Package, Activity, ClipboardList, Search, Monitor, Key } from "lucide-react";
 
 interface User {
   id: string;
@@ -34,8 +34,9 @@ interface User {
 interface BDEMachine {
   id: string;
   machineId: string;
+  department?: string;
   createdAt: string;
-  lastLogin?: string;
+  lastLoginAt?: string;
 }
 
 interface AdminDashboardProps {
@@ -44,6 +45,12 @@ interface AdminDashboardProps {
   orderNumbers?: string[];
   performanceIds?: string[];
   bdeMachines?: BDEMachine[];
+  onAddUser?: (name: string, role: string) => Promise<void>;
+  onAddMachine?: (machineId: string, password: string, department: string) => Promise<void>;
+  onAddPartNumber?: (partNumber: string) => Promise<void>;
+  onAddOrderNumber?: (orderNumber: string) => Promise<void>;
+  onAddPerformanceId?: (performanceId: string) => Promise<void>;
+  onResetPassword?: (machineId: string, password: string) => Promise<void>;
 }
 
 export default function AdminDashboard({
@@ -52,12 +59,30 @@ export default function AdminDashboard({
   orderNumbers = [],
   performanceIds = [],
   bdeMachines = [],
+  onAddUser,
+  onAddMachine,
+  onAddPartNumber,
+  onAddOrderNumber,
+  onAddPerformanceId,
+  onResetPassword,
 }: AdminDashboardProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState<BDEMachine | null>(null);
   const [activeTab, setActiveTab] = useState("machines");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form states
+  const [formData, setFormData] = useState({
+    name: "",
+    role: "",
+    machineId: "",
+    password: "",
+    department: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
 
   const filteredUsers = users.filter((user) =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -66,6 +91,95 @@ export default function AdminDashboard({
   const handleResetPassword = (machine: BDEMachine) => {
     setSelectedMachine(machine);
     setShowResetPasswordDialog(true);
+    setFormData(prev => ({ ...prev, newPassword: "", confirmPassword: "" }));
+  };
+
+  const handleOpenAddDialog = () => {
+    setFormData({
+      name: "",
+      role: "",
+      machineId: "",
+      password: "",
+      department: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+    setShowAddDialog(true);
+  };
+
+  const handleSubmitAdd = async () => {
+    setIsSubmitting(true);
+    try {
+      if (activeTab === "machines") {
+        if (!formData.machineId || !formData.password || !formData.department) {
+          alert("Please fill all fields");
+          return;
+        }
+        await onAddMachine?.(formData.machineId, formData.password, formData.department);
+      } else if (activeTab === "users") {
+        if (!formData.name || !formData.role) {
+          alert("Please fill all fields");
+          return;
+        }
+        await onAddUser?.(formData.name, formData.role);
+      } else if (activeTab === "parts") {
+        if (!formData.name) {
+          alert("Please enter a part number");
+          return;
+        }
+        await onAddPartNumber?.(formData.name);
+      } else if (activeTab === "orders") {
+        if (!formData.name) {
+          alert("Please enter an order number");
+          return;
+        }
+        await onAddOrderNumber?.(formData.name);
+      } else if (activeTab === "performance") {
+        if (!formData.name) {
+          alert("Please enter a performance ID");
+          return;
+        }
+        await onAddPerformanceId?.(formData.name);
+      }
+      setShowAddDialog(false);
+    } catch (error) {
+      console.error("Error adding item:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmitResetPassword = async () => {
+    if (!selectedMachine) return;
+    
+    if (!formData.newPassword || !formData.confirmPassword) {
+      alert("Please fill all fields");
+      return;
+    }
+
+    if (formData.newPassword !== formData.confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onResetPassword?.(selectedMachine.id, formData.newPassword);
+      setShowResetPasswordDialog(false);
+    } catch (error) {
+      console.error("Error resetting password:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "Never";
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch {
+      return dateString;
+    }
   };
 
   return (
@@ -113,7 +227,7 @@ export default function AdminDashboard({
                     <CardTitle>BDE Machines</CardTitle>
                     <CardDescription>Manage machine IDs and credentials</CardDescription>
                   </div>
-                  <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-machine">
+                  <Button onClick={handleOpenAddDialog} data-testid="button-add-machine">
                     <Plus className="w-4 h-4 mr-2" />
                     Add BDE Machine
                   </Button>
@@ -124,6 +238,7 @@ export default function AdminDashboard({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Machine ID</TableHead>
+                      <TableHead>Department</TableHead>
                       <TableHead>Created At</TableHead>
                       <TableHead>Last Login</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -133,29 +248,22 @@ export default function AdminDashboard({
                     {bdeMachines.map((machine) => (
                       <TableRow key={machine.id} data-testid={`row-machine-${machine.id}`}>
                         <TableCell className="font-mono font-medium">{machine.machineId}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{machine.createdAt}</TableCell>
+                        <TableCell>{machine.department || "-"}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {machine.lastLogin || "Never"}
+                          {formatDate(machine.createdAt)}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDate(machine.lastLoginAt)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => handleResetPassword(machine)}
-                              data-testid={`button-reset-password-${machine.id}`}
-                            >
-                              <Key className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => console.log("Delete machine:", machine.id)}
-                              data-testid={`button-delete-machine-${machine.id}`}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleResetPassword(machine)}
+                            data-testid={`button-reset-password-${machine.id}`}
+                          >
+                            <Key className="w-4 h-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -185,7 +293,7 @@ export default function AdminDashboard({
                         data-testid="input-search-users"
                       />
                     </div>
-                    <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-user">
+                    <Button onClick={handleOpenAddDialog} data-testid="button-add-user">
                       <Plus className="w-4 h-4 mr-2" />
                       Add User
                     </Button>
@@ -198,7 +306,6 @@ export default function AdminDashboard({
                     <TableRow>
                       <TableHead>User</TableHead>
                       <TableHead>Role</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -218,26 +325,6 @@ export default function AdminDashboard({
                         <TableCell>
                           <Badge variant="secondary">{user.role}</Badge>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => console.log("Edit user:", user.id)}
-                              data-testid={`button-edit-${user.id}`}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => console.log("Delete user:", user.id)}
-                              data-testid={`button-delete-${user.id}`}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -255,7 +342,7 @@ export default function AdminDashboard({
                     <CardTitle>Part Numbers</CardTitle>
                     <CardDescription>Manage part number catalog</CardDescription>
                   </div>
-                  <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-part">
+                  <Button onClick={handleOpenAddDialog} data-testid="button-add-part">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Part Number
                   </Button>
@@ -266,33 +353,12 @@ export default function AdminDashboard({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Part Number</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {partNumbers.map((pn, idx) => (
                       <TableRow key={idx} data-testid={`row-part-${idx}`}>
                         <TableCell className="font-mono">{pn}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => console.log("Edit part:", pn)}
-                              data-testid={`button-edit-part-${idx}`}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => console.log("Delete part:", pn)}
-                              data-testid={`button-delete-part-${idx}`}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -310,7 +376,7 @@ export default function AdminDashboard({
                     <CardTitle>Order Numbers</CardTitle>
                     <CardDescription>Manage order number catalog</CardDescription>
                   </div>
-                  <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-order">
+                  <Button onClick={handleOpenAddDialog} data-testid="button-add-order">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Order Number
                   </Button>
@@ -321,33 +387,12 @@ export default function AdminDashboard({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Order Number</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {orderNumbers.map((on, idx) => (
                       <TableRow key={idx} data-testid={`row-order-${idx}`}>
                         <TableCell className="font-mono">{on}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => console.log("Edit order:", on)}
-                              data-testid={`button-edit-order-${idx}`}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => console.log("Delete order:", on)}
-                              data-testid={`button-delete-order-${idx}`}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -365,7 +410,7 @@ export default function AdminDashboard({
                     <CardTitle>Performance IDs</CardTitle>
                     <CardDescription>Manage performance ID catalog</CardDescription>
                   </div>
-                  <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-performance">
+                  <Button onClick={handleOpenAddDialog} data-testid="button-add-performance">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Performance ID
                   </Button>
@@ -376,33 +421,12 @@ export default function AdminDashboard({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Performance ID</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {performanceIds.map((pid, idx) => (
                       <TableRow key={idx} data-testid={`row-performance-${idx}`}>
                         <TableCell className="font-mono">{pid}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => console.log("Edit performance:", pid)}
-                              data-testid={`button-edit-performance-${idx}`}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => console.log("Delete performance:", pid)}
-                              data-testid={`button-delete-performance-${idx}`}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -417,11 +441,20 @@ export default function AdminDashboard({
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {activeTab === "machines" ? "Add New BDE Machine" : `Add New ${activeTab === "users" ? "User" : activeTab.slice(0, -1)}`}
+                {activeTab === "machines" 
+                  ? "Add New BDE Machine" 
+                  : activeTab === "users"
+                  ? "Add New User"
+                  : activeTab === "parts"
+                  ? "Add New Part Number"
+                  : activeTab === "orders"
+                  ? "Add New Order Number"
+                  : "Add New Performance ID"
+                }
               </DialogTitle>
               <DialogDescription>
                 {activeTab === "machines" 
-                  ? "Create a new BDE machine with ID and password"
+                  ? "Create a new BDE machine with ID, password, and department"
                   : `Add a new ${activeTab === "users" ? "user" : activeTab.slice(0, -1)} to the system`
                 }
               </DialogDescription>
@@ -431,37 +464,94 @@ export default function AdminDashboard({
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="machineId">Machine ID</Label>
-                    <Input id="machineId" placeholder="e.g., MACHINE-001" data-testid="input-machine-id" />
+                    <Input 
+                      id="machineId" 
+                      placeholder="e.g., BDE-2" 
+                      value={formData.machineId}
+                      onChange={(e) => setFormData(prev => ({ ...prev, machineId: e.target.value }))}
+                      data-testid="input-machine-id" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Department</Label>
+                    <Input 
+                      id="department" 
+                      placeholder="e.g., Production" 
+                      value={formData.department}
+                      onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                      data-testid="input-department" 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" placeholder="Enter password" data-testid="input-password" />
+                    <Input 
+                      id="password" 
+                      type="password" 
+                      placeholder="Enter password" 
+                      value={formData.password}
+                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                      data-testid="input-password" 
+                    />
                   </div>
                 </>
-              ) : (
+              ) : activeTab === "users" ? (
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
-                    <Input id="name" placeholder="Enter name" data-testid="input-add-name" />
+                    <Input 
+                      id="name" 
+                      placeholder="Enter name" 
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      data-testid="input-add-name" 
+                    />
                   </div>
-                  {activeTab === "users" && (
-                    <div className="space-y-2">
-                      <Label htmlFor="role">Role</Label>
-                      <Input id="role" placeholder="Enter role" data-testid="input-add-role" />
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Role</Label>
+                    <Input 
+                      id="role" 
+                      placeholder="Enter role" 
+                      value={formData.role}
+                      onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
+                      data-testid="input-add-role" 
+                    />
+                  </div>
                 </>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="name">
+                    {activeTab === "parts" 
+                      ? "Part Number" 
+                      : activeTab === "orders"
+                      ? "Order Number"
+                      : "Performance ID"
+                    }
+                  </Label>
+                  <Input 
+                    id="name" 
+                    placeholder={`Enter ${activeTab === "parts" ? "part number" : activeTab === "orders" ? "order number" : "performance ID"}`}
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    data-testid="input-add-name" 
+                  />
+                </div>
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddDialog(false)} data-testid="button-cancel-add">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAddDialog(false)} 
+                disabled={isSubmitting}
+                data-testid="button-cancel-add"
+              >
                 Cancel
               </Button>
-              <Button onClick={() => {
-                console.log("Add new item");
-                setShowAddDialog(false);
-              }} data-testid="button-confirm-add">
-                Add
+              <Button 
+                onClick={handleSubmitAdd} 
+                disabled={isSubmitting}
+                data-testid="button-confirm-add"
+              >
+                {isSubmitting ? "Adding..." : "Add"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -479,22 +569,42 @@ export default function AdminDashboard({
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
-                <Input id="newPassword" type="password" placeholder="Enter new password" data-testid="input-new-password" />
+                <Input 
+                  id="newPassword" 
+                  type="password" 
+                  placeholder="Enter new password" 
+                  value={formData.newPassword}
+                  onChange={(e) => setFormData(prev => ({ ...prev, newPassword: e.target.value }))}
+                  data-testid="input-new-password" 
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input id="confirmPassword" type="password" placeholder="Confirm new password" data-testid="input-confirm-password" />
+                <Input 
+                  id="confirmPassword" 
+                  type="password" 
+                  placeholder="Confirm new password" 
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  data-testid="input-confirm-password" 
+                />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowResetPasswordDialog(false)} data-testid="button-cancel-reset">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowResetPasswordDialog(false)} 
+                disabled={isSubmitting}
+                data-testid="button-cancel-reset"
+              >
                 Cancel
               </Button>
-              <Button onClick={() => {
-                console.log("Reset password for:", selectedMachine?.machineId);
-                setShowResetPasswordDialog(false);
-              }} data-testid="button-confirm-reset">
-                Reset Password
+              <Button 
+                onClick={handleSubmitResetPassword} 
+                disabled={isSubmitting}
+                data-testid="button-confirm-reset"
+              >
+                {isSubmitting ? "Resetting..." : "Reset Password"}
               </Button>
             </DialogFooter>
           </DialogContent>
