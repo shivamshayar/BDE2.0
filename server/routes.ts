@@ -10,8 +10,42 @@ import {
   insertOrderNumberSchema,
   insertPerformanceIdSchema
 } from "@shared/schema";
+import multer from "multer";
+import { writeFile } from "fs/promises";
+import { join } from "path";
+import { randomUUID } from "crypto";
+
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Image Upload Endpoint
+  app.post("/api/upload/user-image", upload.single("image"), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const ext = req.file.originalname.split(".").pop();
+      const fileName = `user-${randomUUID()}.${ext}`;
+      const publicDir = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split(",")[0] || "";
+      
+      if (!publicDir) {
+        return res.status(500).json({ error: "Object storage not configured" });
+      }
+
+      const filePath = join(publicDir, fileName);
+      await writeFile(filePath, req.file.buffer);
+
+      const imageUrl = `/public/${fileName}`;
+      res.json({ imageUrl });
+    } catch (error) {
+      console.error("Image upload error:", error);
+      res.status(500).json({ error: "Failed to upload image" });
+    }
+  });
   // BDE Machine Authentication
   app.post("/api/bde/login", async (req: Request, res: Response) => {
     try {
