@@ -9,9 +9,10 @@ import { Lock, AlertCircle } from "lucide-react";
 interface MachineLoginFormProps {
   onLogin?: (machineId: string, password: string) => void;
   error?: string;
+  loading?: boolean;
 }
 
-export default function MachineLoginForm({ onLogin, error }: MachineLoginFormProps) {
+export default function MachineLoginForm({ onLogin, error, loading }: MachineLoginFormProps) {
   const [machineId, setMachineId] = useState("");
   const [password, setPassword] = useState("");
 
@@ -77,8 +78,9 @@ export default function MachineLoginForm({ onLogin, error }: MachineLoginFormPro
               type="submit" 
               className="w-full h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
               data-testid="button-login"
+              disabled={loading}
             >
-              Sign In
+              {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
         </CardContent>

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import CompactSessionsSidebar from "@/components/CompactSessionsSidebar";
 import CompactWorkTracker from "@/components/CompactWorkTracker";
 import { useToast } from "@/hooks/use-toast";
@@ -11,12 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import UserSelectionCard from "@/components/UserSelectionCard";
-import user1 from "@assets/stock_images/professional_factory_697daf75.jpg";
-import user2 from "@assets/stock_images/professional_factory_69cb87bb.jpg";
-import user3 from "@assets/stock_images/professional_factory_3bb8f823.jpg";
-import user4 from "@assets/stock_images/professional_factory_e84d08c3.jpg";
-import user5 from "@assets/stock_images/professional_factory_ba70ba6b.jpg";
-import user6 from "@assets/stock_images/professional_factory_3ce76da2.jpg";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface UserSession {
   id: string;
@@ -31,111 +27,291 @@ interface UserSession {
   performanceId: string;
 }
 
+interface BdeMachine {
+  id: string;
+  machineId: string;
+  department: string;
+}
+
 export default function WorkTrackerPage() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
+  const [machine, setMachine] = useState<BdeMachine | null>(null);
+  const [sessions, setSessions] = useState<UserSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string>("");
 
-  // TODO: remove mock functionality - get from database
-  const availableUsers = [
-    { id: "1", name: "John Smith", role: "Assembly Operator", imageUrl: user1 },
-    { id: "2", name: "Sarah Johnson", role: "Quality Inspector", imageUrl: user2 },
-    { id: "3", name: "Mike Chen", role: "Machine Operator", imageUrl: user3 },
-    { id: "4", name: "Emily Davis", role: "Line Supervisor", imageUrl: user4 },
-    { id: "5", name: "Robert Wilson", role: "Assembly Operator", imageUrl: user5 },
-    { id: "6", name: "Lisa Anderson", role: "Quality Control", imageUrl: user6 },
-  ];
+  // Load machine from session storage
+  useEffect(() => {
+    const machineData = sessionStorage.getItem("bdeMachine");
+    if (!machineData) {
+      setLocation("/");
+      return;
+    }
+    setMachine(JSON.parse(machineData));
+  }, []);
 
-  const mockPartNumbers = ["P-101", "P-103", "P-104", "P50-", "PN-1001", "PN-1002", "PN-1003"];
-  const mockOrderNumbers = ["ORD-2024-001", "ORD-2024-002", "ORD-2024-003", "ORD-2024-004"];
-  const mockPerformanceIds = ["PERF-A", "PERF-B", "PERF-C", "PERF-D"];
-  const mockRecentParts = ["P-101", "P50-", "P-103", "P-104"];
-  const mockRecentOrders = ["ORD-2024-001", "ORD-2024-002", "ORD-2024-003"];
-  const mockRecentPerformance = ["PERF-A", "PERF-B", "PERF-C"];
+  // Fetch users
+  const { data: users = [] } = useQuery<any[]>({
+    queryKey: ["/api/users"],
+    enabled: !!machine,
+  });
 
-  // TODO: remove mock functionality - manage in state/context
-  const [sessions, setSessions] = useState<UserSession[]>([
-    {
-      id: "session-1",
-      userId: "1",
-      userName: "John Smith",
-      userRole: "Assembly Operator",
-      userImage: user1,
-      isRunning: false,
-      duration: 0,
-      partNumber: "",
-      orderNumber: "",
-      performanceId: "",
+  // Fetch master data
+  const { data: partNumbers = [] } = useQuery<any[]>({
+    queryKey: ["/api/master/parts"],
+    enabled: !!machine,
+  });
+
+  const { data: orderNumbers = [] } = useQuery<any[]>({
+    queryKey: ["/api/master/orders"],
+    enabled: !!machine,
+  });
+
+  const { data: performanceIds = [] } = useQuery<any[]>({
+    queryKey: ["/api/master/performance"],
+    enabled: !!machine,
+  });
+
+  // Fetch recent items
+  const { data: recentParts = [] } = useQuery<string[]>({
+    queryKey: ["/api/recent", machine?.id, "parts"],
+    queryFn: async () => {
+      if (!machine) return [];
+      const response = await apiRequest("GET", `/api/recent/${machine.id}/parts`);
+      return response.json();
     },
-  ]);
+    enabled: !!machine,
+  });
 
-  const [activeSessionId, setActiveSessionId] = useState<string>("session-1");
+  const { data: recentOrders = [] } = useQuery<string[]>({
+    queryKey: ["/api/recent", machine?.id, "orders"],
+    queryFn: async () => {
+      if (!machine) return [];
+      const response = await apiRequest("GET", `/api/recent/${machine.id}/orders`);
+      return response.json();
+    },
+    enabled: !!machine,
+  });
+
+  const { data: recentPerformance = [] } = useQuery<string[]>({
+    queryKey: ["/api/recent", machine?.id, "performance"],
+    queryFn: async () => {
+      if (!machine) return [];
+      const response = await apiRequest("GET", `/api/recent/${machine.id}/performance`);
+      return response.json();
+    },
+    enabled: !!machine,
+  });
+
+  // Load sessions from backend
+  useEffect(() => {
+    if (!machine) return;
+    
+    const loadSessions = async () => {
+      try {
+        const response = await apiRequest("GET", `/api/sessions/${machine.id}`);
+        const data = await response.json();
+        
+        // Map backend sessions to frontend format
+        const mappedSessions = data.map((session: any) => ({
+          id: session.id,
+          userId: session.userId,
+          userName: users.find((u: any) => u.id === session.userId)?.name || "Unknown",
+          userRole: users.find((u: any) => u.id === session.userId)?.role || "Worker",
+          userImage: users.find((u: any) => u.id === session.userId)?.imageUrl,
+          isRunning: session.isRunning,
+          duration: session.duration,
+          partNumber: session.partNumber || "",
+          orderNumber: session.orderNumber || "",
+          performanceId: session.performanceId || "",
+        }));
+        
+        setSessions(mappedSessions);
+        if (mappedSessions.length > 0 && !activeSessionId) {
+          setActiveSessionId(mappedSessions[0].id);
+        }
+      } catch (error) {
+        console.error("Error loading sessions:", error);
+      }
+    };
+
+    if (users.length > 0) {
+      loadSessions();
+    }
+  }, [machine, users]);
+
+  const createSessionMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/sessions", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+    },
+  });
+
+  const updateSessionMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      const response = await apiRequest("PATCH", `/api/sessions/${id}`, updates);
+      return response.json();
+    },
+  });
+
+  const deleteSessionMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest("DELETE", `/api/sessions/${id}`);
+      return response.json();
+    },
+  });
+
+  const createWorkLogMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/work-logs", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recent"] });
+    },
+  });
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
 
-  const handleUpdateSession = (sessionId: string, updates: Partial<UserSession>) => {
+  const handleUpdateSession = async (sessionId: string, updates: Partial<UserSession>) => {
+    // Update local state immediately
     setSessions((prev) =>
       prev.map((session) =>
         session.id === sessionId ? { ...session, ...updates } : session
       )
     );
-  };
 
-  const handleStopSession = (sessionId: string, data: any) => {
-    console.log("Work session completed:", data);
-    toast({
-      title: "Work Session Completed",
-      description: `Duration: ${Math.floor(data.duration / 60)}m ${data.duration % 60}s`,
-    });
-    // Keep user in session, don't remove
-  };
-
-  const handleAddSession = (user: any) => {
-    const newSession: UserSession = {
-      id: `session-${Date.now()}`,
-      userId: user.id,
-      userName: user.name,
-      userRole: user.role,
-      userImage: user.imageUrl,
-      isRunning: false,
-      duration: 0,
-      partNumber: "",
-      orderNumber: "",
-      performanceId: "",
-    };
-    
-    // Add new user to the top of the list
-    setSessions((prev) => [newSession, ...prev]);
-    setActiveSessionId(newSession.id);
-    setShowAddUserDialog(false);
-    
-    toast({
-      title: "User Added",
-      description: `${user.name} has been added to the active sessions.`,
-    });
-  };
-
-  const handleRemoveSession = (sessionId: string) => {
-    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-    
-    // Switch to another session if available
-    if (sessions.length > 1) {
-      const remainingSessions = sessions.filter((s) => s.id !== sessionId);
-      setActiveSessionId(remainingSessions[0].id);
-    } else {
-      setActiveSessionId("");
+    // Update backend
+    try {
+      await updateSessionMutation.mutateAsync({ id: sessionId, updates });
+    } catch (error) {
+      console.error("Error updating session:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update session",
+        variant: "destructive",
+      });
     }
+  };
+
+  const handleStopSession = async (sessionId: string, data: any) => {
+    console.log("Work session completed:", data);
     
-    toast({
-      title: "User Removed",
-      description: "User has been removed from active sessions.",
-    });
+    // Create work log
+    try {
+      const session = sessions.find(s => s.id === sessionId);
+      if (!session || !machine) return;
+
+      await createWorkLogMutation.mutateAsync({
+        machineId: machine.id,
+        userId: session.userId,
+        userName: session.userName,
+        partNumber: data.partNumber,
+        orderNumber: data.orderNumber,
+        performanceId: data.performanceId,
+        duration: data.duration,
+      });
+
+      toast({
+        title: "Work Session Completed",
+        description: `Duration: ${Math.floor(data.duration / 60)}m ${data.duration % 60}s`,
+      });
+    } catch (error) {
+      console.error("Error saving work log:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save work log",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddSession = async (user: any) => {
+    if (!machine) return;
+
+    try {
+      const response = await createSessionMutation.mutateAsync({
+        machineId: machine.id,
+        userId: user.id,
+        isRunning: false,
+        duration: 0,
+        partNumber: "",
+        orderNumber: "",
+        performanceId: "",
+      });
+
+      const newSession: UserSession = {
+        id: response.id,
+        userId: user.id,
+        userName: user.name,
+        userRole: user.role,
+        userImage: user.imageUrl,
+        isRunning: false,
+        duration: 0,
+        partNumber: "",
+        orderNumber: "",
+        performanceId: "",
+      };
+
+      // Add new user to the top of the list
+      setSessions((prev) => [newSession, ...prev]);
+      setActiveSessionId(newSession.id);
+      setShowAddUserDialog(false);
+
+      toast({
+        title: "User Added",
+        description: `${user.name} has been added to the active sessions.`,
+      });
+    } catch (error) {
+      console.error("Error adding session:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add user session",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveSession = async (sessionId: string) => {
+    try {
+      await deleteSessionMutation.mutateAsync(sessionId);
+      
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+
+      // Switch to another session if available
+      if (sessions.length > 1) {
+        const remainingSessions = sessions.filter((s) => s.id !== sessionId);
+        setActiveSessionId(remainingSessions[0].id);
+      } else {
+        setActiveSessionId("");
+      }
+
+      toast({
+        title: "User Removed",
+        description: "User has been removed from active sessions.",
+      });
+    } catch (error) {
+      console.error("Error removing session:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove session",
+        variant: "destructive",
+      });
+    }
   };
 
   // Filter out users who already have active sessions
-  const availableUsersToAdd = availableUsers.filter(
-    (user) => !sessions.some((session) => session.userId === user.id)
+  const availableUsersToAdd = users.filter(
+    (user: any) => !sessions.some((session) => session.userId === user.id)
   );
+
+  if (!machine) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -151,14 +327,14 @@ export default function WorkTrackerPage() {
       {activeSession ? (
         <CompactWorkTracker
           session={activeSession}
-          department="Production"
-          machineId="BDE-1"
-          partNumbers={mockPartNumbers}
-          orderNumbers={mockOrderNumbers}
-          performanceIds={mockPerformanceIds}
-          recentPartNumbers={mockRecentParts}
-          recentOrderNumbers={mockRecentOrders}
-          recentPerformanceIds={mockRecentPerformance}
+          department={machine.department}
+          machineId={machine.machineId}
+          partNumbers={partNumbers.map((p: any) => p.partNumber)}
+          orderNumbers={orderNumbers.map((o: any) => o.orderNumber)}
+          performanceIds={performanceIds.map((p: any) => p.performanceId)}
+          recentPartNumbers={recentParts}
+          recentOrderNumbers={recentOrders}
+          recentPerformanceIds={recentPerformance}
           onUpdateSession={handleUpdateSession}
           onStopSession={handleStopSession}
         />
@@ -184,10 +360,10 @@ export default function WorkTrackerPage() {
               Select a user to add to the active work sessions
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
             {availableUsersToAdd.length > 0 ? (
-              availableUsersToAdd.map((user) => (
+              availableUsersToAdd.map((user: any) => (
                 <UserSelectionCard
                   key={user.id}
                   id={user.id}

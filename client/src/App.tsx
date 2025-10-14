@@ -13,8 +13,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={LoginPage} />
-      <Route path="/select-user" component={UserSelection} />
-      <Route path="/work-tracker" component={WorkTrackerPage} />
+      <Route path="/tracker" component={WorkTrackerPage} />
       <Route path="/admin" component={AdminPage} />
       <Route component={NotFound} />
     </Switch>
