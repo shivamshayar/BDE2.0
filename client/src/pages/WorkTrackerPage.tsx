@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import CompactSessionsSidebar from "@/components/CompactSessionsSidebar";
-import MultiUserWorkTracker from "@/components/MultiUserWorkTracker";
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import CompactWorkTracker from "@/components/CompactWorkTracker";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -48,9 +46,10 @@ export default function WorkTrackerPage() {
     { id: "6", name: "Lisa Anderson", role: "Quality Control", imageUrl: user6 },
   ];
 
-  const mockPartNumbers = ["PN-1001", "PN-1002", "PN-1003", "PN-1004", "PN-1005"];
+  const mockPartNumbers = ["P-101", "P-103", "P-104", "P50-", "PN-1001", "PN-1002", "PN-1003"];
   const mockOrderNumbers = ["ORD-2024-001", "ORD-2024-002", "ORD-2024-003", "ORD-2024-004"];
   const mockPerformanceIds = ["PERF-A", "PERF-B", "PERF-C", "PERF-D"];
+  const mockRecentParts = ["P-101", "P50-", "P-103", "P-104"];
 
   // TODO: remove mock functionality - manage in state/context
   const [sessions, setSessions] = useState<UserSession[]>([
@@ -127,7 +126,7 @@ export default function WorkTrackerPage() {
   );
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       <CompactSessionsSidebar
         sessions={sessions}
         activeSessionId={activeSessionId}
@@ -136,43 +135,31 @@ export default function WorkTrackerPage() {
         onSettings={() => setLocation("/admin")}
       />
 
-      <div className="flex-1 flex flex-col">
-        <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between gap-4">
-              <h1 className="text-xl font-semibold">BDE Work Tracking</h1>
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/")}
-                data-testid="button-logout"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
+      {activeSession ? (
+        <CompactWorkTracker
+          session={activeSession}
+          department="Production"
+          machineId="BDE-1"
+          partNumbers={mockPartNumbers}
+          orderNumbers={mockOrderNumbers}
+          performanceIds={mockPerformanceIds}
+          recentPartNumbers={mockRecentParts}
+          onUpdateSession={handleUpdateSession}
+          onStopSession={handleStopSession}
+        />
+      ) : (
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
+          <div className="text-center space-y-6">
+            <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+              <span className="text-5xl">👤</span>
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold mb-2">No Active Session</h2>
+              <p className="text-xl text-muted-foreground">Click the + button in the sidebar to add a user</p>
             </div>
           </div>
-        </header>
-
-        {activeSession ? (
-          <MultiUserWorkTracker
-            session={activeSession}
-            partNumbers={mockPartNumbers}
-            orderNumbers={mockOrderNumbers}
-            performanceIds={mockPerformanceIds}
-            onUpdateSession={handleUpdateSession}
-            onStopSession={handleStopSession}
-          />
-        ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <p className="text-muted-foreground">No active session selected</p>
-              <Button onClick={() => setShowAddUserDialog(true)}>
-                Add User Session
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
