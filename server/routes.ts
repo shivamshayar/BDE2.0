@@ -235,6 +235,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/work-logs/user/:userId", async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const logs = await storage.getWorkLogsByUser(userId, limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Get user work logs error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/work-logs/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { partNumber, orderNumber, performanceId } = req.body;
+
+      if (!partNumber || !orderNumber || !performanceId) {
+        return res.status(400).json({ error: "Part number, order number, and performance ID are required" });
+      }
+
+      const log = await storage.updateWorkLog(id, {
+        partNumber,
+        orderNumber,
+        performanceId,
+        isModified: true
+      });
+
+      if (!log) {
+        return res.status(404).json({ error: "Work log not found" });
+      }
+
+      res.json(log);
+    } catch (error) {
+      console.error("Update work log error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Recent Items
   app.get("/api/recent/:machineId/parts", async (req: Request, res: Response) => {
     try {
