@@ -61,6 +61,7 @@ export default function WorkHistoryDialog({
     partNumber: "",
     orderNumber: "",
     performanceId: "",
+    duration: 0,
   });
 
   const { data: workLogs = [], isLoading, error } = useQuery<WorkLog[]>({
@@ -69,11 +70,12 @@ export default function WorkHistoryDialog({
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: { id: string; partNumber: string; orderNumber: string; performanceId: string }) => {
+    mutationFn: async (data: { id: string; partNumber: string; orderNumber: string; performanceId: string; duration: number }) => {
       return await apiRequest("PATCH", `/api/work-logs/${data.id}`, {
         partNumber: data.partNumber,
         orderNumber: data.orderNumber,
         performanceId: data.performanceId,
+        duration: data.duration,
       });
     },
     onSuccess: () => {
@@ -99,6 +101,7 @@ export default function WorkHistoryDialog({
       partNumber: log.partNumber,
       orderNumber: log.orderNumber,
       performanceId: log.performanceId,
+      duration: log.duration,
     });
   };
 
@@ -117,6 +120,7 @@ export default function WorkHistoryDialog({
       partNumber: "",
       orderNumber: "",
       performanceId: "",
+      duration: 0,
     });
   };
 
@@ -220,7 +224,7 @@ export default function WorkHistoryDialog({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="space-y-2">
                         <Label>Part Number</Label>
                         {isEditing ? (
@@ -328,6 +332,26 @@ export default function WorkHistoryDialog({
                         ) : (
                           <div className="font-mono text-sm p-2 bg-muted rounded" data-testid={`text-perf-${log.id}`}>
                             {log.performanceId}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Duration (seconds)</Label>
+                        {isEditing ? (
+                          <Input
+                            type="number"
+                            min="0"
+                            value={editForm.duration}
+                            onChange={(e) =>
+                              setEditForm({ ...editForm, duration: parseInt(e.target.value) || 0 })
+                            }
+                            placeholder="Duration in seconds..."
+                            data-testid={`input-duration-${log.id}`}
+                          />
+                        ) : (
+                          <div className="font-mono text-sm p-2 bg-muted rounded" data-testid={`text-duration-${log.id}`}>
+                            {formatDuration(log.duration)}
                           </div>
                         )}
                       </div>
