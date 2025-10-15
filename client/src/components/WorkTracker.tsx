@@ -28,7 +28,6 @@ import { Play, Square } from "lucide-react";
 interface User {
   id: string;
   name: string;
-  role: string;
   imageUrl?: string;
 }
 
@@ -120,9 +119,6 @@ export default function WorkTracker({
                     <h2 className="text-2xl font-bold" data-testid="text-user-name">
                       {user.name}
                     </h2>
-                    <Badge variant="secondary" className="mt-2" data-testid="badge-user-role">
-                      {user.role}
-                    </Badge>
                   </div>
                 </div>
 

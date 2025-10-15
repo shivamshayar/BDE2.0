@@ -21,7 +21,6 @@ interface UserSession {
   id: string;
   userId: string;
   userName: string;
-  userRole: string;
   userImage?: string;
   isRunning: boolean;
   duration: number;
@@ -123,9 +122,6 @@ export default function MultiUserWorkTracker({
                     <h2 className="text-3xl font-bold" data-testid="text-user-name">
                       {session.userName}
                     </h2>
-                    <Badge variant="secondary" className="mt-3 text-base px-4 py-1" data-testid="badge-user-role">
-                      {session.userRole}
-                    </Badge>
                   </div>
                 </div>
 

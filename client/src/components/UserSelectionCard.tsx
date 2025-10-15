@@ -6,7 +6,6 @@ import { Check } from "lucide-react";
 interface UserSelectionCardProps {
   id: string;
   name: string;
-  role: string;
   imageUrl?: string;
   selected?: boolean;
   onClick?: () => void;
@@ -15,7 +14,6 @@ interface UserSelectionCardProps {
 export default function UserSelectionCard({
   id,
   name,
-  role,
   imageUrl,
   selected = false,
   onClick,
@@ -59,13 +57,6 @@ export default function UserSelectionCard({
           <h3 className="font-bold text-xl" data-testid={`text-username-${id}`}>
             {name}
           </h3>
-          <Badge 
-            variant="secondary" 
-            className="text-sm px-4 py-1 font-medium"
-            data-testid={`badge-role-${id}`}
-          >
-            {role}
-          </Badge>
         </div>
       </div>
     </Card>

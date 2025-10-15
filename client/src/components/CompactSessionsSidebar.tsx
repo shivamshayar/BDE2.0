@@ -22,7 +22,6 @@ interface UserSession {
   id: string;
   userId: string;
   userName: string;
-  userRole: string;
   userImage?: string;
   isRunning: boolean;
   duration: number;
@@ -123,7 +122,6 @@ export default function CompactSessionsSidebar({
               <TooltipContent side="right" className="bg-popover text-popover-foreground border shadow-xl">
                 <div className="text-sm">
                   <div className="font-semibold">{session.userName}</div>
-                  <div className="text-xs text-muted-foreground">{session.userRole}</div>
                   {session.isRunning && (
                     <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">● Timer Running</div>
                   )}

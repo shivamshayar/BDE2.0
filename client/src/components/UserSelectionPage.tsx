@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 interface User {
   id: string;
   name: string;
-  role: string;
   imageUrl?: string;
 }
 
@@ -30,8 +29,7 @@ export default function UserSelectionPage({
 
   const filteredUsers = users.filter(
     (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchTerm.toLowerCase())
+      user.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSelectUser = (user: User) => {
@@ -72,7 +70,7 @@ export default function UserSelectionPage({
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or role..."
+                  placeholder="Search by name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-12 h-14 text-base border-2 focus:border-primary shadow-md"
@@ -91,7 +89,6 @@ export default function UserSelectionPage({
                 key={user.id}
                 id={user.id}
                 name={user.name}
-                role={user.role}
                 imageUrl={user.imageUrl}
                 selected={selectedUserId === user.id}
                 onClick={() => handleSelectUser(user)}

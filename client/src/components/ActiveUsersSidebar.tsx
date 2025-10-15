@@ -9,7 +9,6 @@ interface UserSession {
   id: string;
   userId: string;
   userName: string;
-  userRole: string;
   userImage?: string;
   isRunning: boolean;
   duration: number;
@@ -92,9 +91,6 @@ export default function ActiveUsersSidebar({
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm truncate" data-testid={`text-session-name-${session.id}`}>
                         {session.userName}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {session.userRole}
                       </div>
                       
                       <div className="mt-2 flex items-center gap-2">
