@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, Square } from "lucide-react";
+import { Play, Square, History } from "lucide-react";
 import BottomDrawer from "./BottomDrawer";
+import WorkHistoryDialog from "./WorkHistoryDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +61,7 @@ export default function CompactWorkTracker({
   onStopSession,
 }: CompactWorkTrackerProps) {
   const [showStopDialog, setShowStopDialog] = useState(false);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [localDuration, setLocalDuration] = useState(session.duration);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerType, setDrawerType] = useState<"part" | "order" | "performance">("part");
@@ -157,9 +159,19 @@ export default function CompactWorkTracker({
           <h1 className="text-2xl font-bold">
             Department : <span className="gradient-text">{department}</span>
           </h1>
-          <Badge variant="outline" className="text-lg px-4 py-2 font-mono font-bold border-2">
-            {machineId}
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowHistoryDialog(true)}
+              data-testid="button-work-history"
+            >
+              <History className="w-4 h-4 mr-2" />
+              History
+            </Button>
+            <Badge variant="outline" className="text-lg px-4 py-2 font-mono font-bold border-2">
+              {machineId}
+            </Badge>
+          </div>
         </div>
       </header>
 
@@ -378,6 +390,17 @@ export default function CompactWorkTracker({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Work History Dialog */}
+      <WorkHistoryDialog
+        open={showHistoryDialog}
+        onOpenChange={setShowHistoryDialog}
+        userId={session.userId}
+        userName={session.userName}
+        partNumbers={partNumbers}
+        orderNumbers={orderNumbers}
+        performanceIds={performanceIds}
+      />
     </div>
   );
 }

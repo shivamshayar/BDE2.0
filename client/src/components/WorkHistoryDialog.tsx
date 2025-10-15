@@ -70,13 +70,10 @@ export default function WorkHistoryDialog({
 
   const updateMutation = useMutation({
     mutationFn: async (data: { id: string; partNumber: string; orderNumber: string; performanceId: string }) => {
-      return await apiRequest(`/api/work-logs/${data.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          partNumber: data.partNumber,
-          orderNumber: data.orderNumber,
-          performanceId: data.performanceId,
-        }),
+      return await apiRequest("PATCH", `/api/work-logs/${data.id}`, {
+        partNumber: data.partNumber,
+        orderNumber: data.orderNumber,
+        performanceId: data.performanceId,
       });
     },
     onSuccess: () => {
