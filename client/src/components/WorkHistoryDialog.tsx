@@ -63,7 +63,7 @@ export default function WorkHistoryDialog({
     performanceId: "",
   });
 
-  const { data: workLogs = [], isLoading } = useQuery<WorkLog[]>({
+  const { data: workLogs = [], isLoading, error } = useQuery<WorkLog[]>({
     queryKey: ["/api/work-logs/user", userId],
     enabled: open && !!userId,
   });
@@ -141,6 +141,17 @@ export default function WorkHistoryDialog({
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-muted-foreground">Loading work history...</div>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <div className="text-destructive">Failed to load work history</div>
+              <Button
+                variant="outline"
+                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/work-logs/user", userId] })}
+                data-testid="button-retry-history"
+              >
+                Retry
+              </Button>
             </div>
           ) : workLogs.length === 0 ? (
             <div className="flex items-center justify-center py-12">
