@@ -250,18 +250,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/work-logs/:id", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { partNumber, orderNumber, performanceId } = req.body;
+      const { partNumber, orderNumber, performanceId, duration } = req.body;
 
       if (!partNumber || !orderNumber || !performanceId) {
         return res.status(400).json({ error: "Part number, order number, and performance ID are required" });
       }
 
-      const log = await storage.updateWorkLog(id, {
+      const updates: any = {
         partNumber,
         orderNumber,
         performanceId,
         isModified: true
-      });
+      };
+
+      if (duration !== undefined) {
+        updates.duration = duration;
+      }
+
+      const log = await storage.updateWorkLog(id, updates);
 
       if (!log) {
         return res.status(404).json({ error: "Work log not found" });
