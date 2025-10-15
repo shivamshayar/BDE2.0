@@ -48,6 +48,8 @@ export interface IStorage {
   // Work Logs
   createWorkLog(log: InsertWorkLog): Promise<WorkLog>;
   getWorkLogsByMachine(machineId: string, limit?: number): Promise<WorkLog[]>;
+  getWorkLogsByUser(userId: string, limit?: number): Promise<WorkLog[]>;
+  updateWorkLog(id: string, updates: Partial<WorkLog>): Promise<WorkLog | undefined>;
   getRecentPartNumbers(machineId: string, limit?: number): Promise<string[]>;
   getRecentOrderNumbers(machineId: string, limit?: number): Promise<string[]>;
   getRecentPerformanceIds(machineId: string, limit?: number): Promise<string[]>;
@@ -143,6 +145,19 @@ export class DbStorage implements IStorage {
       .where(eq(workLogs.machineId, machineId))
       .orderBy(desc(workLogs.completedAt))
       .limit(limit);
+  }
+
+  async getWorkLogsByUser(userId: string, limit: number = 10): Promise<WorkLog[]> {
+    return await db.select()
+      .from(workLogs)
+      .where(eq(workLogs.userId, userId))
+      .orderBy(desc(workLogs.completedAt))
+      .limit(limit);
+  }
+
+  async updateWorkLog(id: string, updates: Partial<WorkLog>): Promise<WorkLog | undefined> {
+    const result = await db.update(workLogs).set(updates).where(eq(workLogs.id, id)).returning();
+    return result[0];
   }
 
   async getRecentPartNumbers(machineId: string, limit: number = 4): Promise<string[]> {

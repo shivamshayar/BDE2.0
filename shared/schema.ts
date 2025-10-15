@@ -72,6 +72,7 @@ export const workLogs = pgTable("work_logs", {
   orderNumber: text("order_number").notNull(),
   performanceId: text("performance_id").notNull(),
   duration: integer("duration").notNull(),
+  isModified: boolean("is_modified").notNull().default(false),
   completedAt: timestamp("completed_at").notNull().defaultNow(),
 });
 
