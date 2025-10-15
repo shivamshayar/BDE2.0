@@ -19,7 +19,6 @@ interface UserSession {
   id: string;
   userId: string;
   userName: string;
-  userRole: string;
   userImage?: string;
   isRunning: boolean;
   duration: number;

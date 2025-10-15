@@ -18,7 +18,6 @@ interface UserSession {
   id: string;
   userId: string;
   userName: string;
-  userRole: string;
   userImage?: string;
   isRunning: boolean;
   duration: number;
@@ -118,7 +117,6 @@ export default function WorkTrackerPage() {
           id: session.id,
           userId: session.userId,
           userName: users.find((u: any) => u.id === session.userId)?.name || "Unknown",
-          userRole: users.find((u: any) => u.id === session.userId)?.role || "Worker",
           userImage: users.find((u: any) => u.id === session.userId)?.imageUrl,
           isRunning: session.isRunning,
           duration: session.duration,
@@ -248,7 +246,6 @@ export default function WorkTrackerPage() {
         id: response.id,
         userId: user.id,
         userName: user.name,
-        userRole: user.role,
         userImage: user.imageUrl,
         isRunning: false,
         duration: 0,
@@ -368,7 +365,6 @@ export default function WorkTrackerPage() {
                   key={user.id}
                   id={user.id}
                   name={user.name}
-                  role={user.role}
                   imageUrl={user.imageUrl}
                   onClick={() => handleAddSession(user)}
                 />
