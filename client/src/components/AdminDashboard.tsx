@@ -27,7 +27,6 @@ import { Plus, Trash2, Users, Package, Activity, ClipboardList, Search, Monitor,
 interface User {
   id: string;
   name: string;
-  role: string;
   imageUrl?: string;
 }
 
@@ -45,7 +44,7 @@ interface AdminDashboardProps {
   orderNumbers?: string[];
   performanceIds?: string[];
   bdeMachines?: BDEMachine[];
-  onAddUser?: (name: string, role: string, imageUrl: string | null) => Promise<void>;
+  onAddUser?: (name: string, imageUrl: string | null) => Promise<void>;
   onAddMachine?: (machineId: string, password: string, department: string) => Promise<void>;
   onAddPartNumber?: (partNumber: string) => Promise<void>;
   onAddOrderNumber?: (orderNumber: string) => Promise<void>;
@@ -76,7 +75,6 @@ export default function AdminDashboard({
   // Form states
   const [formData, setFormData] = useState({
     name: "",
-    role: "",
     machineId: "",
     password: "",
     department: "",
@@ -100,7 +98,6 @@ export default function AdminDashboard({
   const handleOpenAddDialog = () => {
     setFormData({
       name: "",
-      role: "",
       machineId: "",
       password: "",
       department: "",
@@ -161,7 +158,7 @@ export default function AdminDashboard({
         }
         await onAddMachine?.(formData.machineId, formData.password, formData.department);
       } else if (activeTab === "users") {
-        if (!formData.name || !formData.role) {
+        if (!formData.name) {
           alert("Please fill all fields");
           return;
         }
@@ -176,7 +173,7 @@ export default function AdminDashboard({
           }
         }
         
-        await onAddUser?.(formData.name, formData.role, imageUrl);
+        await onAddUser?.(formData.name, imageUrl);
       } else if (activeTab === "parts") {
         if (!formData.name) {
           alert("Please enter a part number");
@@ -335,7 +332,7 @@ export default function AdminDashboard({
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div>
                     <CardTitle>Users</CardTitle>
-                    <CardDescription>Manage worker profiles and roles</CardDescription>
+                    <CardDescription>Manage worker profiles</CardDescription>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="relative">
@@ -360,7 +357,6 @@ export default function AdminDashboard({
                   <TableHeader>
                     <TableRow>
                       <TableHead>User</TableHead>
-                      <TableHead>Role</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -376,9 +372,6 @@ export default function AdminDashboard({
                             </Avatar>
                             <span className="font-medium">{user.name}</span>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{user.role}</Badge>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -559,16 +552,6 @@ export default function AdminDashboard({
                       value={formData.name}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       data-testid="input-add-name" 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Input 
-                      id="role" 
-                      placeholder="Enter role" 
-                      value={formData.role}
-                      onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
-                      data-testid="input-add-role" 
                     />
                   </div>
                   <div className="space-y-2">

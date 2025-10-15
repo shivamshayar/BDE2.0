@@ -27,7 +27,6 @@ export type BdeMachine = typeof bdeMachines.$inferSelect;
 export const factoryUsers = pgTable("factory_users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  role: text("role").notNull(),
   imageUrl: text("image_url"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
