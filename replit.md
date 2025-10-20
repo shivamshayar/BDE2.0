@@ -9,24 +9,21 @@ A comprehensive Business Data Entry (BDE) system for tracking factory worker per
 - ✅ Duration field shows readable format (hours, minutes, seconds) but accepts input as total seconds
 - ✅ Modified entries tracked with `isModified` flag and displayed with "Modified" badge
 
-## 🚨 CRITICAL: Production Database Setup
+## ✅ Automatic Database Setup
 
-### Problem
-The published URL shows "Network error. Please try again." because the **production database** doesn't have the schema/tables yet.
+The application now **automatically creates all database tables** when it starts up! You don't need to manually run migrations or push schema.
 
-### Solution
-To fix the published URL, you need to push the database schema to production:
+### How It Works
+- On server startup, the app checks if database tables exist
+- If tables don't exist, they are created automatically using `CREATE TABLE IF NOT EXISTS`
+- This works in both development and production environments
+- Safe to run multiple times - won't overwrite existing data
 
-1. **Open the Database tool** in the left sidebar of Replit
-2. **Switch to the Production database** (there's a toggle at the top)
-3. **Click "Push Schema"** or run this command in the Shell:
-   ```bash
-   npm run db:push
-   ```
-4. **Confirm** when it asks about pushing to production
-5. **Refresh your published URL** - it should now work!
-
-The development version works fine because the dev database already has the schema. Production needs it too.
+### What This Means
+- ✅ Published URL will work immediately (no manual database setup needed)
+- ✅ Fresh database installations work automatically
+- ✅ No need to run `npm run db:push` manually
+- ✅ Production and development databases initialize the same way
 
 ## Architecture
 
