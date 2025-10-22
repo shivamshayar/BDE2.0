@@ -3,11 +3,15 @@
 ## Project Overview
 A comprehensive Business Data Entry (BDE) system for tracking factory worker performance on production machines. Features machine-based authentication, multi-user session management, timer-based work tracking, and admin dashboard for managing master data.
 
-## Recent Changes (October 20, 2025)
+## Recent Changes (October 22, 2025)
+- ✅ **Barcode generation** - Part Numbers, Order Numbers, and Performance IDs now display barcodes in admin panel
+- ✅ **PDF barcode downloads** - Download all barcodes for any master data category as PDF
+- ✅ **USB barcode scanner support** - Tracker page input fields work seamlessly with USB barcode scanners
 - ✅ Duration editing capability added to work history - users can now edit the time/duration of submitted entries
 - ✅ Work history grid expanded to 4 columns (Part Number, Order Number, Performance ID, Duration)
 - ✅ Duration field shows readable format (hours, minutes, seconds) but accepts input as total seconds
 - ✅ Modified entries tracked with `isModified` flag and displayed with "Modified" badge
+- ✅ Automatic database setup on server startup
 
 ## ✅ Automatic Database Setup
 
@@ -84,11 +88,22 @@ Located in `shared/schema.ts`:
 - Manage BDE machines (add/edit/delete)
 - Manage master data:
   - Users
-  - Part Numbers
-  - Order Numbers
-  - Performance IDs
+  - Part Numbers (with barcode display and PDF download)
+  - Order Numbers (with barcode display and PDF download)
+  - Performance IDs (with barcode display and PDF download)
+- **Barcode Generation**: Each master data item automatically generates a Code128 barcode
+- **PDF Export**: Download all barcodes for any category as a single PDF file
 - Touch-optimized for factory floor
 - Mutations use explicit try-catch with error re-throw for proper error handling
+
+#### Barcode Support
+- **Visual Barcodes**: Admin panel displays Code128 barcodes for all master data
+- **PDF Downloads**: Export all barcodes for Part Numbers, Order Numbers, or Performance IDs as PDF
+- **USB Scanner Support**: Tracker page inputs work seamlessly with USB barcode scanners
+  - Barcode scanners act as keyboard input devices
+  - Simply focus an input field and scan - the value auto-populates
+  - Works with Part Number, Order Number, and Performance ID fields
+  - No special configuration needed - plug and play!
 
 ### Design System
 
