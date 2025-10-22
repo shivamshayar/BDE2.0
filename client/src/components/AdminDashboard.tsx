@@ -22,7 +22,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Users, Package, Activity, ClipboardList, Search, Monitor, Key } from "lucide-react";
+import { Plus, Trash2, Users, Package, Activity, ClipboardList, Search, Monitor, Key, Download } from "lucide-react";
+import { BarcodeDisplay } from "@/components/BarcodeDisplay";
+import { downloadBarcodesAsPDF } from "@/lib/barcode-utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface User {
   id: string;
@@ -85,9 +88,89 @@ export default function AdminDashboard({
   const [imagePreview, setImagePreview] = useState<string>("");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
+  const { toast } = useToast();
+  
   const filteredUsers = users.filter((user) =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleDownloadPartNumberBarcodes = async () => {
+    if (partNumbers.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No part numbers available to download",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const items = partNumbers.map(pn => ({ id: pn, value: pn }));
+      await downloadBarcodesAsPDF(items, "Part Numbers Barcodes");
+      toast({
+        title: "Success",
+        description: "Barcodes downloaded successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadOrderNumberBarcodes = async () => {
+    if (orderNumbers.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No order numbers available to download",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const items = orderNumbers.map(on => ({ id: on, value: on }));
+      await downloadBarcodesAsPDF(items, "Order Numbers Barcodes");
+      toast({
+        title: "Success",
+        description: "Barcodes downloaded successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadPerformanceIdBarcodes = async () => {
+    if (performanceIds.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No performance IDs available to download",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const items = performanceIds.map(pid => ({ id: pid, value: pid }));
+      await downloadBarcodesAsPDF(items, "Performance IDs Barcodes");
+      toast({
+        title: "Success",
+        description: "Barcodes downloaded successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleResetPassword = (machine: BDEMachine) => {
     setSelectedMachine(machine);
@@ -388,12 +471,22 @@ export default function AdminDashboard({
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div>
                     <CardTitle>Part Numbers</CardTitle>
-                    <CardDescription>Manage part number catalog</CardDescription>
+                    <CardDescription>Manage part number catalog with barcodes</CardDescription>
                   </div>
-                  <Button onClick={handleOpenAddDialog} data-testid="button-add-part">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Part Number
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleDownloadPartNumberBarcodes}
+                      data-testid="button-download-part-barcodes"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download All Barcodes
+                    </Button>
+                    <Button onClick={handleOpenAddDialog} data-testid="button-add-part">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Part Number
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -401,12 +494,16 @@ export default function AdminDashboard({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Part Number</TableHead>
+                      <TableHead>Barcode</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {partNumbers.map((pn, idx) => (
                       <TableRow key={idx} data-testid={`row-part-${idx}`}>
                         <TableCell className="font-mono">{pn}</TableCell>
+                        <TableCell>
+                          <BarcodeDisplay text={pn} />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -422,12 +519,22 @@ export default function AdminDashboard({
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div>
                     <CardTitle>Order Numbers</CardTitle>
-                    <CardDescription>Manage order number catalog</CardDescription>
+                    <CardDescription>Manage order number catalog with barcodes</CardDescription>
                   </div>
-                  <Button onClick={handleOpenAddDialog} data-testid="button-add-order">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Order Number
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleDownloadOrderNumberBarcodes}
+                      data-testid="button-download-order-barcodes"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download All Barcodes
+                    </Button>
+                    <Button onClick={handleOpenAddDialog} data-testid="button-add-order">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Order Number
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -435,12 +542,16 @@ export default function AdminDashboard({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Order Number</TableHead>
+                      <TableHead>Barcode</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {orderNumbers.map((on, idx) => (
                       <TableRow key={idx} data-testid={`row-order-${idx}`}>
                         <TableCell className="font-mono">{on}</TableCell>
+                        <TableCell>
+                          <BarcodeDisplay text={on} />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -456,12 +567,22 @@ export default function AdminDashboard({
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div>
                     <CardTitle>Performance IDs</CardTitle>
-                    <CardDescription>Manage performance ID catalog</CardDescription>
+                    <CardDescription>Manage performance ID catalog with barcodes</CardDescription>
                   </div>
-                  <Button onClick={handleOpenAddDialog} data-testid="button-add-performance">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Performance ID
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleDownloadPerformanceIdBarcodes}
+                      data-testid="button-download-performance-barcodes"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download All Barcodes
+                    </Button>
+                    <Button onClick={handleOpenAddDialog} data-testid="button-add-performance">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Performance ID
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -469,12 +590,16 @@ export default function AdminDashboard({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Performance ID</TableHead>
+                      <TableHead>Barcode</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {performanceIds.map((pid, idx) => (
                       <TableRow key={idx} data-testid={`row-performance-${idx}`}>
                         <TableCell className="font-mono">{pid}</TableCell>
+                        <TableCell>
+                          <BarcodeDisplay text={pid} />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
