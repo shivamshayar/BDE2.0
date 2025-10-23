@@ -153,6 +153,38 @@ export default function CompactWorkTracker({
 
   const canStart = !session.isRunning && session.partNumber && session.orderNumber && session.performanceId;
 
+  const normalizeGermanChars = (text: string): string => {
+    const charMap: Record<string, string> = {
+      'ß': '-',
+      'ü': '[',
+      'ö': ';',
+      'ä': "'",
+      'Ü': '{',
+      'Ö': ':',
+      'Ä': '"',
+    };
+    return text.split('').map(char => charMap[char] || char).join('');
+  };
+
+  const handlePartNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const normalized = normalizeGermanChars(e.target.value);
+    onUpdateSession?.(session.id, { partNumber: normalized });
+  };
+
+  const handleOrderNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const normalized = normalizeGermanChars(e.target.value);
+    onUpdateSession?.(session.id, { orderNumber: normalized });
+  };
+
+  const handlePerformanceIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const normalized = normalizeGermanChars(e.target.value);
+    onUpdateSession?.(session.id, { performanceId: normalized });
+  };
+
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.select();
+  };
+
   return (
     <div className="flex-1 bg-gradient-to-br from-background via-background to-primary/5 flex flex-col">
       {/* Header */}
@@ -206,7 +238,8 @@ export default function CompactWorkTracker({
                 <div className="flex gap-2">
                   <Input
                     value={session.partNumber}
-                    onChange={(e) => onUpdateSession?.(session.id, { partNumber: e.target.value })}
+                    onChange={handlePartNumberChange}
+                    onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Part Number"
                     className="h-14 text-xl font-bold flex-1"
@@ -230,7 +263,8 @@ export default function CompactWorkTracker({
                 <div className="flex gap-2">
                   <Input
                     value={session.orderNumber}
-                    onChange={(e) => onUpdateSession?.(session.id, { orderNumber: e.target.value })}
+                    onChange={handleOrderNumberChange}
+                    onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Order Number"
                     className="h-14 text-xl font-bold flex-1"
@@ -254,7 +288,8 @@ export default function CompactWorkTracker({
                 <div className="flex gap-2">
                   <Input
                     value={session.performanceId}
-                    onChange={(e) => onUpdateSession?.(session.id, { performanceId: e.target.value })}
+                    onChange={handlePerformanceIdChange}
+                    onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Performance ID"
                     className="h-14 text-xl font-bold flex-1"
