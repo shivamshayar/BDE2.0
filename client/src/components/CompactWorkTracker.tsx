@@ -191,10 +191,8 @@ export default function CompactWorkTracker({
     if (isRapidTyping) {
       if (!wasScanning) {
         isScanningRef.current = true;
-        const scannedPortion = normalized.startsWith(stablePartValueRef.current) 
-          ? normalized.slice(stablePartValueRef.current.length)
-          : normalized;
-        onUpdateSession?.(session.id, { partNumber: scannedPortion });
+        const lastChar = normalized.slice(-1);
+        onUpdateSession?.(session.id, { partNumber: lastChar });
       } else {
         onUpdateSession?.(session.id, { partNumber: normalized });
       }
@@ -226,10 +224,8 @@ export default function CompactWorkTracker({
     if (isRapidTyping) {
       if (!wasScanning) {
         isScanningRef.current = true;
-        const scannedPortion = normalized.startsWith(stableOrderValueRef.current) 
-          ? normalized.slice(stableOrderValueRef.current.length)
-          : normalized;
-        onUpdateSession?.(session.id, { orderNumber: scannedPortion });
+        const lastChar = normalized.slice(-1);
+        onUpdateSession?.(session.id, { orderNumber: lastChar });
       } else {
         onUpdateSession?.(session.id, { orderNumber: normalized });
       }
@@ -261,10 +257,8 @@ export default function CompactWorkTracker({
     if (isRapidTyping) {
       if (!wasScanning) {
         isScanningRef.current = true;
-        const scannedPortion = normalized.startsWith(stablePerformanceValueRef.current) 
-          ? normalized.slice(stablePerformanceValueRef.current.length)
-          : normalized;
-        onUpdateSession?.(session.id, { performanceId: scannedPortion });
+        const lastChar = normalized.slice(-1);
+        onUpdateSession?.(session.id, { performanceId: lastChar });
       } else {
         onUpdateSession?.(session.id, { performanceId: normalized });
       }
