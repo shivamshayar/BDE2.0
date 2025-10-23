@@ -36,6 +36,7 @@ interface CompactSessionsSidebarProps {
   onAddSession?: () => void;
   onRemoveSession?: (sessionId: string) => void;
   onSettings?: () => void;
+  isAdmin?: boolean;
 }
 
 export default function CompactSessionsSidebar({
@@ -45,6 +46,7 @@ export default function CompactSessionsSidebar({
   onAddSession,
   onRemoveSession,
   onSettings,
+  isAdmin = false,
 }: CompactSessionsSidebarProps) {
   const [longPressSession, setLongPressSession] = useState<string | null>(null);
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
@@ -153,23 +155,25 @@ export default function CompactSessionsSidebar({
         </Tooltip>
       </div>
 
-      {/* Settings Button at Bottom */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onSettings}
-            className="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 text-sidebar-foreground border-2 border-white/20 hover:border-white/40 transition-all hover:scale-105 shadow-lg"
-            data-testid="button-settings"
-          >
-            <Settings className="w-7 h-7" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right" className="bg-popover text-popover-foreground border shadow-xl">
-          <p className="text-sm font-medium">Settings</p>
-        </TooltipContent>
-      </Tooltip>
+      {/* Settings Button at Bottom - Only for Admin */}
+      {isAdmin && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onSettings}
+              className="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 text-sidebar-foreground border-2 border-white/20 hover:border-white/40 transition-all hover:scale-105 shadow-lg"
+              data-testid="button-settings"
+            >
+              <Settings className="w-7 h-7" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="bg-popover text-popover-foreground border shadow-xl">
+            <p className="text-sm font-medium">Settings</p>
+          </TooltipContent>
+        </Tooltip>
+      )}
 
       {/* Remove Confirmation Dialog */}
       <AlertDialog open={!!longPressSession} onOpenChange={(open) => !open && setLongPressSession(null)}>

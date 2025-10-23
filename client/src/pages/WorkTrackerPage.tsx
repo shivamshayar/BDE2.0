@@ -30,6 +30,7 @@ interface BdeMachine {
   id: string;
   machineId: string;
   department: string;
+  isAdmin?: boolean;
 }
 
 export default function WorkTrackerPage() {
@@ -319,6 +320,7 @@ export default function WorkTrackerPage() {
         onAddSession={() => setShowAddUserDialog(true)}
         onRemoveSession={handleRemoveSession}
         onSettings={() => setLocation("/admin")}
+        isAdmin={machine.isAdmin}
       />
 
       {activeSession ? (
