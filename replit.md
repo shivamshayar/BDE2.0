@@ -3,7 +3,10 @@
 ## Project Overview
 A comprehensive Business Data Entry (BDE) system for tracking factory worker performance on production machines. Features machine-based authentication, multi-user session management, timer-based work tracking, and admin dashboard for managing master data.
 
-## Recent Changes (October 22, 2025)
+## Recent Changes (October 23, 2025)
+- ✅ **Admin status display** - BDE Machines table now shows Admin/User badges
+- ✅ **Admin checkbox** - Add machine form includes checkbox to designate administrator status
+- ✅ **Default admin seeding** - Automatically creates admin user (BDE-1) on first database initialization
 - ✅ **Barcode generation** - Part Numbers, Order Numbers, and Performance IDs now display barcodes in admin panel
 - ✅ **PDF barcode downloads** - Download all barcodes for any master data category as PDF
 - ✅ **USB barcode scanner support** - Tracker page input fields work seamlessly with USB barcode scanners
@@ -20,12 +23,14 @@ The application now **automatically creates all database tables** when it starts
 ### How It Works
 - On server startup, the app checks if database tables exist
 - If tables don't exist, they are created automatically using `CREATE TABLE IF NOT EXISTS`
+- **Default admin machine (BDE-1) is automatically created** if no admin exists
 - This works in both development and production environments
 - Safe to run multiple times - won't overwrite existing data
 
 ### What This Means
 - ✅ Published URL will work immediately (no manual database setup needed)
 - ✅ Fresh database installations work automatically
+- ✅ Default admin credentials (BDE-1 / 1234) created automatically on first run
 - ✅ No need to run `npm run db:push` manually
 - ✅ Production and development databases initialize the same way
 
@@ -188,6 +193,7 @@ See `DOCKER_DEPLOYMENT.md` for detailed instructions on deploying outside Replit
 ### Machine Login
 - **Machine ID**: BDE-1
 - **Password**: 1234
+- **Note**: Default admin machine is automatically created on first database initialization
 
 ## Known Issues
 

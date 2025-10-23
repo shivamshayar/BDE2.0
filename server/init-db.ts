@@ -2,6 +2,8 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import { migrate } from 'drizzle-orm/neon-serverless/migrator';
 import { Pool } from '@neondatabase/serverless';
 import * as schema from "@shared/schema";
+import bcrypt from 'bcrypt';
+import { eq } from 'drizzle-orm';
 
 export async function initializeDatabase() {
   try {
@@ -18,6 +20,24 @@ export async function initializeDatabase() {
 
     // Run migrations
     await migrate(migrationDb, { migrationsFolder: './migrations' });
+    
+    // Seed default admin user if no admin machines exist
+    const existingAdmins = await migrationDb.select().from(schema.bdeMachines).where(eq(schema.bdeMachines.isAdmin, true));
+    
+    if (existingAdmins.length === 0) {
+      console.log('🌱 Seeding default admin machine...');
+      const hashedPassword = await bcrypt.hash('1234', 10);
+      
+      await migrationDb.insert(schema.bdeMachines).values({
+        machineId: 'BDE-1',
+        password: hashedPassword,
+        department: 'Administration',
+        isAdmin: true,
+        isActive: true
+      });
+      
+      console.log('✅ Default admin machine created (Machine ID: BDE-1)');
+    }
     
     // Close the migration pool
     await migrationPool.end();
