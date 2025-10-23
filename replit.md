@@ -101,7 +101,9 @@ Located in `shared/schema.ts`:
 - **PDF Downloads**: Export all barcodes for Part Numbers, Order Numbers, or Performance IDs as PDF
 - **USB Scanner Support**: Tracker page inputs work seamlessly with USB barcode scanners
   - Barcode scanners act as keyboard input devices
-  - Simply focus an input field and scan - the value auto-populates
+  - Click input field or dropdown button to enter/select values
+  - Automatic text selection on focus - scanning replaces existing value (no append)
+  - German keyboard normalization (ß → -, etc.) for international compatibility
   - Works with Part Number, Order Number, and Performance ID fields
   - No special configuration needed - plug and play!
 
