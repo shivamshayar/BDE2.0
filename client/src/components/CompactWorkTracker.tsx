@@ -70,17 +70,19 @@ export default function CompactWorkTracker({
   const partLastKeyTimeRef = useRef<number>(0);
   const partIsScanningRef = useRef<boolean>(false);
   const partScanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const stablePartValueRef = useRef<string>("");
+  const partInputRef = useRef<HTMLInputElement>(null);
   
   const orderLastKeyTimeRef = useRef<number>(0);
   const orderIsScanningRef = useRef<boolean>(false);
   const orderScanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const stableOrderValueRef = useRef<string>("");
+  const orderInputRef = useRef<HTMLInputElement>(null);
   
   const perfLastKeyTimeRef = useRef<number>(0);
   const perfIsScanningRef = useRef<boolean>(false);
   const perfScanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const stablePerformanceValueRef = useRef<string>("");
+  const perfInputRef = useRef<HTMLInputElement>(null);
+  
+  const startButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setLocalDuration(session.duration);
@@ -200,10 +202,8 @@ export default function CompactWorkTracker({
       onUpdateSession?.(session.id, { partNumber: normalized });
     } else if (isRapidTyping && !wasScanning) {
       partIsScanningRef.current = true;
-      const cleanValue = normalized.startsWith(stablePartValueRef.current) && stablePartValueRef.current
-        ? normalized.slice(stablePartValueRef.current.length)
-        : normalized;
-      onUpdateSession?.(session.id, { partNumber: cleanValue });
+      const lastChar = normalized.slice(-1);
+      onUpdateSession?.(session.id, { partNumber: lastChar });
     } else {
       partIsScanningRef.current = false;
       onUpdateSession?.(session.id, { partNumber: normalized });
@@ -211,6 +211,9 @@ export default function CompactWorkTracker({
     
     partScanTimeoutRef.current = setTimeout(() => {
       partIsScanningRef.current = false;
+      if (normalized && !session.isRunning) {
+        orderInputRef.current?.focus();
+      }
     }, 100);
   };
 
@@ -233,10 +236,8 @@ export default function CompactWorkTracker({
       onUpdateSession?.(session.id, { orderNumber: normalized });
     } else if (isRapidTyping && !wasScanning) {
       orderIsScanningRef.current = true;
-      const cleanValue = normalized.startsWith(stableOrderValueRef.current) && stableOrderValueRef.current
-        ? normalized.slice(stableOrderValueRef.current.length)
-        : normalized;
-      onUpdateSession?.(session.id, { orderNumber: cleanValue });
+      const lastChar = normalized.slice(-1);
+      onUpdateSession?.(session.id, { orderNumber: lastChar });
     } else {
       orderIsScanningRef.current = false;
       onUpdateSession?.(session.id, { orderNumber: normalized });
@@ -244,6 +245,9 @@ export default function CompactWorkTracker({
     
     orderScanTimeoutRef.current = setTimeout(() => {
       orderIsScanningRef.current = false;
+      if (normalized && !session.isRunning) {
+        perfInputRef.current?.focus();
+      }
     }, 100);
   };
 
@@ -266,10 +270,8 @@ export default function CompactWorkTracker({
       onUpdateSession?.(session.id, { performanceId: normalized });
     } else if (isRapidTyping && !wasScanning) {
       perfIsScanningRef.current = true;
-      const cleanValue = normalized.startsWith(stablePerformanceValueRef.current) && stablePerformanceValueRef.current
-        ? normalized.slice(stablePerformanceValueRef.current.length)
-        : normalized;
-      onUpdateSession?.(session.id, { performanceId: cleanValue });
+      const lastChar = normalized.slice(-1);
+      onUpdateSession?.(session.id, { performanceId: lastChar });
     } else {
       perfIsScanningRef.current = false;
       onUpdateSession?.(session.id, { performanceId: normalized });
@@ -277,21 +279,21 @@ export default function CompactWorkTracker({
     
     perfScanTimeoutRef.current = setTimeout(() => {
       perfIsScanningRef.current = false;
+      if (normalized && !session.isRunning) {
+        startButtonRef.current?.focus();
+      }
     }, 100);
   };
 
   const handlePartNumberFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    stablePartValueRef.current = session.partNumber;
     e.target.select();
   };
 
   const handleOrderNumberFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    stableOrderValueRef.current = session.orderNumber;
     e.target.select();
   };
 
   const handlePerformanceIdFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    stablePerformanceValueRef.current = session.performanceId;
     e.target.select();
   };
 
@@ -347,6 +349,7 @@ export default function CompactWorkTracker({
                 <label className="text-sm font-semibold text-muted-foreground">Part Number</label>
                 <div className="flex gap-2">
                   <Input
+                    ref={partInputRef}
                     value={session.partNumber}
                     onChange={handlePartNumberChange}
                     onFocus={handlePartNumberFocus}
@@ -372,6 +375,7 @@ export default function CompactWorkTracker({
                 <label className="text-sm font-semibold text-muted-foreground">Order Number</label>
                 <div className="flex gap-2">
                   <Input
+                    ref={orderInputRef}
                     value={session.orderNumber}
                     onChange={handleOrderNumberChange}
                     onFocus={handleOrderNumberFocus}
@@ -397,6 +401,7 @@ export default function CompactWorkTracker({
                 <label className="text-sm font-semibold text-muted-foreground">Performance ID</label>
                 <div className="flex gap-2">
                   <Input
+                    ref={perfInputRef}
                     value={session.performanceId}
                     onChange={handlePerformanceIdChange}
                     onFocus={handlePerformanceIdFocus}
@@ -434,6 +439,7 @@ export default function CompactWorkTracker({
               </div>
               {!session.isRunning ? (
                 <Button
+                  ref={startButtonRef}
                   size="icon"
                   onClick={handleStart}
                   disabled={!canStart}
