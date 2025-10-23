@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +66,10 @@ export default function CompactWorkTracker({
   const [localDuration, setLocalDuration] = useState(session.duration);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerType, setDrawerType] = useState<"part" | "order" | "performance">("part");
+  
+  const lastKeyTimeRef = useRef<number>(0);
+  const isScanningRef = useRef<boolean>(false);
+  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setLocalDuration(session.duration);
@@ -166,6 +170,47 @@ export default function CompactWorkTracker({
     return text.split('').map(char => charMap[char] || char).join('');
   };
 
+  const detectBarcodeScanning = () => {
+    const now = Date.now();
+    const timeDiff = now - lastKeyTimeRef.current;
+    
+    if (timeDiff > 0 && timeDiff < 50) {
+      if (!isScanningRef.current) {
+        isScanningRef.current = true;
+      }
+    }
+    
+    lastKeyTimeRef.current = now;
+    
+    if (scanTimeoutRef.current) {
+      clearTimeout(scanTimeoutRef.current);
+    }
+    
+    scanTimeoutRef.current = setTimeout(() => {
+      isScanningRef.current = false;
+    }, 100);
+    
+    return isScanningRef.current;
+  };
+
+  const handlePartNumberKeyDown = () => {
+    if (detectBarcodeScanning() && session.partNumber) {
+      onUpdateSession?.(session.id, { partNumber: "" });
+    }
+  };
+
+  const handleOrderNumberKeyDown = () => {
+    if (detectBarcodeScanning() && session.orderNumber) {
+      onUpdateSession?.(session.id, { orderNumber: "" });
+    }
+  };
+
+  const handlePerformanceIdKeyDown = () => {
+    if (detectBarcodeScanning() && session.performanceId) {
+      onUpdateSession?.(session.id, { performanceId: "" });
+    }
+  };
+
   const handlePartNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const normalized = normalizeGermanChars(e.target.value);
     onUpdateSession?.(session.id, { partNumber: normalized });
@@ -239,6 +284,7 @@ export default function CompactWorkTracker({
                   <Input
                     value={session.partNumber}
                     onChange={handlePartNumberChange}
+                    onKeyDown={handlePartNumberKeyDown}
                     onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Part Number"
@@ -264,6 +310,7 @@ export default function CompactWorkTracker({
                   <Input
                     value={session.orderNumber}
                     onChange={handleOrderNumberChange}
+                    onKeyDown={handleOrderNumberKeyDown}
                     onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Order Number"
@@ -289,6 +336,7 @@ export default function CompactWorkTracker({
                   <Input
                     value={session.performanceId}
                     onChange={handlePerformanceIdChange}
+                    onKeyDown={handlePerformanceIdKeyDown}
                     onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Performance ID"
