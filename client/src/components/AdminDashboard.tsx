@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Users, Package, Activity, ClipboardList, Search, Monitor, Key, Download } from "lucide-react";
 import { BarcodeDisplay } from "@/components/BarcodeDisplay";
 import { downloadBarcodesAsPDF } from "@/lib/barcode-utils";
@@ -38,6 +39,7 @@ interface BDEMachine {
   id: string;
   machineId: string;
   department?: string;
+  isAdmin?: boolean;
   createdAt: string;
   lastLoginAt?: string;
 }
@@ -49,7 +51,7 @@ interface AdminDashboardProps {
   performanceIds?: string[];
   bdeMachines?: BDEMachine[];
   onAddUser?: (name: string, imageUrl: string | null) => Promise<void>;
-  onAddMachine?: (machineId: string, password: string, department: string) => Promise<void>;
+  onAddMachine?: (machineId: string, password: string, department: string, isAdmin: boolean) => Promise<void>;
   onAddPartNumber?: (partNumber: string) => Promise<void>;
   onAddOrderNumber?: (orderNumber: string) => Promise<void>;
   onAddPerformanceId?: (performanceId: string) => Promise<void>;
@@ -82,6 +84,7 @@ export default function AdminDashboard({
     machineId: "",
     password: "",
     department: "",
+    isAdmin: false,
     newPassword: "",
     confirmPassword: "",
   });
@@ -183,6 +186,7 @@ export default function AdminDashboard({
       machineId: "",
       password: "",
       department: "",
+      isAdmin: false,
       newPassword: "",
       confirmPassword: "",
     });
@@ -198,7 +202,7 @@ export default function AdminDashboard({
           alert("Please fill all fields");
           return;
         }
-        await onAddMachine?.(formData.machineId, formData.password, formData.department);
+        await onAddMachine?.(formData.machineId, formData.password, formData.department, formData.isAdmin);
       } else if (activeTab === "users") {
         if (!formData.name) {
           alert("Please fill all fields");
@@ -324,6 +328,7 @@ export default function AdminDashboard({
                     <TableRow>
                       <TableHead>Machine ID</TableHead>
                       <TableHead>Department</TableHead>
+                      <TableHead>Admin</TableHead>
                       <TableHead>Created At</TableHead>
                       <TableHead>Last Login</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -334,6 +339,13 @@ export default function AdminDashboard({
                       <TableRow key={machine.id} data-testid={`row-machine-${machine.id}`}>
                         <TableCell className="font-mono font-medium">{machine.machineId}</TableCell>
                         <TableCell>{machine.department || "-"}</TableCell>
+                        <TableCell>
+                          {machine.isAdmin ? (
+                            <Badge variant="default" data-testid={`badge-admin-${machine.id}`}>Admin</Badge>
+                          ) : (
+                            <Badge variant="secondary" data-testid={`badge-user-${machine.id}`}>User</Badge>
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {formatDate(machine.createdAt)}
                         </TableCell>
@@ -615,6 +627,20 @@ export default function AdminDashboard({
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                       data-testid="input-password" 
                     />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="isAdmin"
+                      checked={formData.isAdmin}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isAdmin: checked as boolean }))}
+                      data-testid="checkbox-is-admin"
+                    />
+                    <Label 
+                      htmlFor="isAdmin"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Make this machine an administrator
+                    </Label>
                   </div>
                 </>
               ) : activeTab === "users" ? (

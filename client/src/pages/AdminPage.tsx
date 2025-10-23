@@ -157,8 +157,8 @@ export default function AdminPage() {
     await createUserMutation.mutateAsync({ name, imageUrl, isActive: true });
   };
 
-  const handleAddMachine = async (machineId: string, password: string, department: string) => {
-    await createMachineMutation.mutateAsync({ machineId, password, department, isActive: true });
+  const handleAddMachine = async (machineId: string, password: string, department: string, isAdmin: boolean) => {
+    await createMachineMutation.mutateAsync({ machineId, password, department, isAdmin, isActive: true });
   };
 
   const handleAddPartNumber = async (partNumber: string) => {
