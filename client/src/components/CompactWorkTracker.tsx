@@ -67,20 +67,10 @@ export default function CompactWorkTracker({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerType, setDrawerType] = useState<"part" | "order" | "performance">("part");
   
-  const partLastKeyTimeRef = useRef<number>(0);
-  const partIsScanningRef = useRef<boolean>(false);
-  const partScanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const stablePartValueRef = useRef<string>("");
-  
-  const orderLastKeyTimeRef = useRef<number>(0);
-  const orderIsScanningRef = useRef<boolean>(false);
-  const orderScanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const stableOrderValueRef = useRef<string>("");
-  
-  const perfLastKeyTimeRef = useRef<number>(0);
-  const perfIsScanningRef = useRef<boolean>(false);
-  const perfScanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const stablePerformanceValueRef = useRef<string>("");
+  const lastKeyTimeRef = useRef<number>(0);
+  const isScanningRef = useRef<boolean>(false);
+  const preScanValueRef = useRef<string>("");
+  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setLocalDuration(session.duration);
@@ -186,31 +176,36 @@ export default function CompactWorkTracker({
     const normalized = normalizeGermanChars(newValue);
     
     const now = Date.now();
-    const timeDiff = now - partLastKeyTimeRef.current;
-    partLastKeyTimeRef.current = now;
+    const timeDiff = now - lastKeyTimeRef.current;
+    lastKeyTimeRef.current = now;
     
-    if (partScanTimeoutRef.current) {
-      clearTimeout(partScanTimeoutRef.current);
+    if (scanTimeoutRef.current) {
+      clearTimeout(scanTimeoutRef.current);
     }
     
-    const wasScanning = partIsScanningRef.current;
+    const wasScanning = isScanningRef.current;
     const isRapidTyping = timeDiff > 0 && timeDiff < 50;
     
-    if (isRapidTyping && wasScanning) {
-      onUpdateSession?.(session.id, { partNumber: normalized });
-    } else if (isRapidTyping && !wasScanning) {
-      partIsScanningRef.current = true;
-      const cleanValue = normalized.startsWith(stablePartValueRef.current) && stablePartValueRef.current
-        ? normalized.slice(stablePartValueRef.current.length)
-        : normalized;
-      onUpdateSession?.(session.id, { partNumber: cleanValue });
+    if (isRapidTyping) {
+      if (!wasScanning && session.partNumber) {
+        preScanValueRef.current = session.partNumber;
+        isScanningRef.current = true;
+        const scannedPortion = normalized.startsWith(preScanValueRef.current) 
+          ? normalized.slice(preScanValueRef.current.length)
+          : normalized;
+        onUpdateSession?.(session.id, { partNumber: scannedPortion });
+      } else {
+        onUpdateSession?.(session.id, { partNumber: normalized });
+      }
     } else {
-      partIsScanningRef.current = false;
+      isScanningRef.current = false;
+      preScanValueRef.current = "";
       onUpdateSession?.(session.id, { partNumber: normalized });
     }
     
-    partScanTimeoutRef.current = setTimeout(() => {
-      partIsScanningRef.current = false;
+    scanTimeoutRef.current = setTimeout(() => {
+      isScanningRef.current = false;
+      preScanValueRef.current = "";
     }, 100);
   };
 
@@ -219,31 +214,36 @@ export default function CompactWorkTracker({
     const normalized = normalizeGermanChars(newValue);
     
     const now = Date.now();
-    const timeDiff = now - orderLastKeyTimeRef.current;
-    orderLastKeyTimeRef.current = now;
+    const timeDiff = now - lastKeyTimeRef.current;
+    lastKeyTimeRef.current = now;
     
-    if (orderScanTimeoutRef.current) {
-      clearTimeout(orderScanTimeoutRef.current);
+    if (scanTimeoutRef.current) {
+      clearTimeout(scanTimeoutRef.current);
     }
     
-    const wasScanning = orderIsScanningRef.current;
+    const wasScanning = isScanningRef.current;
     const isRapidTyping = timeDiff > 0 && timeDiff < 50;
     
-    if (isRapidTyping && wasScanning) {
-      onUpdateSession?.(session.id, { orderNumber: normalized });
-    } else if (isRapidTyping && !wasScanning) {
-      orderIsScanningRef.current = true;
-      const cleanValue = normalized.startsWith(stableOrderValueRef.current) && stableOrderValueRef.current
-        ? normalized.slice(stableOrderValueRef.current.length)
-        : normalized;
-      onUpdateSession?.(session.id, { orderNumber: cleanValue });
+    if (isRapidTyping) {
+      if (!wasScanning && session.orderNumber) {
+        preScanValueRef.current = session.orderNumber;
+        isScanningRef.current = true;
+        const scannedPortion = normalized.startsWith(preScanValueRef.current) 
+          ? normalized.slice(preScanValueRef.current.length)
+          : normalized;
+        onUpdateSession?.(session.id, { orderNumber: scannedPortion });
+      } else {
+        onUpdateSession?.(session.id, { orderNumber: normalized });
+      }
     } else {
-      orderIsScanningRef.current = false;
+      isScanningRef.current = false;
+      preScanValueRef.current = "";
       onUpdateSession?.(session.id, { orderNumber: normalized });
     }
     
-    orderScanTimeoutRef.current = setTimeout(() => {
-      orderIsScanningRef.current = false;
+    scanTimeoutRef.current = setTimeout(() => {
+      isScanningRef.current = false;
+      preScanValueRef.current = "";
     }, 100);
   };
 
@@ -252,46 +252,40 @@ export default function CompactWorkTracker({
     const normalized = normalizeGermanChars(newValue);
     
     const now = Date.now();
-    const timeDiff = now - perfLastKeyTimeRef.current;
-    perfLastKeyTimeRef.current = now;
+    const timeDiff = now - lastKeyTimeRef.current;
+    lastKeyTimeRef.current = now;
     
-    if (perfScanTimeoutRef.current) {
-      clearTimeout(perfScanTimeoutRef.current);
+    if (scanTimeoutRef.current) {
+      clearTimeout(scanTimeoutRef.current);
     }
     
-    const wasScanning = perfIsScanningRef.current;
+    const wasScanning = isScanningRef.current;
     const isRapidTyping = timeDiff > 0 && timeDiff < 50;
     
-    if (isRapidTyping && wasScanning) {
-      onUpdateSession?.(session.id, { performanceId: normalized });
-    } else if (isRapidTyping && !wasScanning) {
-      perfIsScanningRef.current = true;
-      const cleanValue = normalized.startsWith(stablePerformanceValueRef.current) && stablePerformanceValueRef.current
-        ? normalized.slice(stablePerformanceValueRef.current.length)
-        : normalized;
-      onUpdateSession?.(session.id, { performanceId: cleanValue });
+    if (isRapidTyping) {
+      if (!wasScanning && session.performanceId) {
+        preScanValueRef.current = session.performanceId;
+        isScanningRef.current = true;
+        const scannedPortion = normalized.startsWith(preScanValueRef.current) 
+          ? normalized.slice(preScanValueRef.current.length)
+          : normalized;
+        onUpdateSession?.(session.id, { performanceId: scannedPortion });
+      } else {
+        onUpdateSession?.(session.id, { performanceId: normalized });
+      }
     } else {
-      perfIsScanningRef.current = false;
+      isScanningRef.current = false;
+      preScanValueRef.current = "";
       onUpdateSession?.(session.id, { performanceId: normalized });
     }
     
-    perfScanTimeoutRef.current = setTimeout(() => {
-      perfIsScanningRef.current = false;
+    scanTimeoutRef.current = setTimeout(() => {
+      isScanningRef.current = false;
+      preScanValueRef.current = "";
     }, 100);
   };
 
-  const handlePartNumberFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    stablePartValueRef.current = session.partNumber;
-    e.target.select();
-  };
-
-  const handleOrderNumberFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    stableOrderValueRef.current = session.orderNumber;
-    e.target.select();
-  };
-
-  const handlePerformanceIdFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    stablePerformanceValueRef.current = session.performanceId;
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     e.target.select();
   };
 
@@ -349,7 +343,7 @@ export default function CompactWorkTracker({
                   <Input
                     value={session.partNumber}
                     onChange={handlePartNumberChange}
-                    onFocus={handlePartNumberFocus}
+                    onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Part Number"
                     className="h-14 text-xl font-bold flex-1"
@@ -374,7 +368,7 @@ export default function CompactWorkTracker({
                   <Input
                     value={session.orderNumber}
                     onChange={handleOrderNumberChange}
-                    onFocus={handleOrderNumberFocus}
+                    onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Order Number"
                     className="h-14 text-xl font-bold flex-1"
@@ -399,7 +393,7 @@ export default function CompactWorkTracker({
                   <Input
                     value={session.performanceId}
                     onChange={handlePerformanceIdChange}
-                    onFocus={handlePerformanceIdFocus}
+                    onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Performance ID"
                     className="h-14 text-xl font-bold flex-1"
