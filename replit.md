@@ -22,8 +22,9 @@ The application now **automatically creates all database tables** when it starts
 
 ### How It Works
 - On server startup, the app checks if database tables exist
-- If tables don't exist, they are created automatically using `CREATE TABLE IF NOT EXISTS`
+- If tables don't exist, they are created automatically using direct SQL `CREATE TABLE IF NOT EXISTS`
 - **Default admin machine (BDE-1) is automatically created** if no admin exists
+- No migration system needed - tables are created directly
 - This works in both development and production environments
 - Safe to run multiple times - won't overwrite existing data
 
@@ -172,9 +173,7 @@ npm run start
 ```
 
 ### Database Commands
-```bash
-npm run db:push  # Push schema to database
-```
+No manual database commands needed! Tables are created automatically on server startup.
 
 ## Deployment
 
