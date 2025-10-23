@@ -69,6 +69,7 @@ export default function CompactWorkTracker({
   
   const lastKeyTimeRef = useRef<number>(0);
   const isScanningRef = useRef<boolean>(false);
+  const hasBeenClearedRef = useRef<boolean>(false);
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -177,6 +178,7 @@ export default function CompactWorkTracker({
     if (timeDiff > 0 && timeDiff < 50) {
       if (!isScanningRef.current) {
         isScanningRef.current = true;
+        hasBeenClearedRef.current = false;
       }
     }
     
@@ -188,42 +190,59 @@ export default function CompactWorkTracker({
     
     scanTimeoutRef.current = setTimeout(() => {
       isScanningRef.current = false;
+      hasBeenClearedRef.current = false;
     }, 100);
-    
-    return isScanningRef.current;
   };
 
   const handlePartNumberKeyDown = () => {
-    if (detectBarcodeScanning() && session.partNumber) {
-      onUpdateSession?.(session.id, { partNumber: "" });
-    }
+    detectBarcodeScanning();
   };
 
   const handleOrderNumberKeyDown = () => {
-    if (detectBarcodeScanning() && session.orderNumber) {
-      onUpdateSession?.(session.id, { orderNumber: "" });
-    }
+    detectBarcodeScanning();
   };
 
   const handlePerformanceIdKeyDown = () => {
-    if (detectBarcodeScanning() && session.performanceId) {
-      onUpdateSession?.(session.id, { performanceId: "" });
-    }
+    detectBarcodeScanning();
   };
 
   const handlePartNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const normalized = normalizeGermanChars(e.target.value);
-    onUpdateSession?.(session.id, { partNumber: normalized });
+    const newValue = e.target.value;
+    const normalized = normalizeGermanChars(newValue);
+    
+    if (isScanningRef.current && !hasBeenClearedRef.current && session.partNumber) {
+      hasBeenClearedRef.current = true;
+      const lastChar = normalized.slice(-1);
+      onUpdateSession?.(session.id, { partNumber: lastChar });
+    } else {
+      onUpdateSession?.(session.id, { partNumber: normalized });
+    }
   };
 
   const handleOrderNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const normalized = normalizeGermanChars(e.target.value);
-    onUpdateSession?.(session.id, { orderNumber: normalized });
+    const newValue = e.target.value;
+    const normalized = normalizeGermanChars(newValue);
+    
+    if (isScanningRef.current && !hasBeenClearedRef.current && session.orderNumber) {
+      hasBeenClearedRef.current = true;
+      const lastChar = normalized.slice(-1);
+      onUpdateSession?.(session.id, { orderNumber: lastChar });
+    } else {
+      onUpdateSession?.(session.id, { orderNumber: normalized });
+    }
   };
 
   const handlePerformanceIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const normalized = normalizeGermanChars(e.target.value);
-    onUpdateSession?.(session.id, { performanceId: normalized });
+    const newValue = e.target.value;
+    const normalized = normalizeGermanChars(newValue);
+    
+    if (isScanningRef.current && !hasBeenClearedRef.current && session.performanceId) {
+      hasBeenClearedRef.current = true;
+      const lastChar = normalized.slice(-1);
+      onUpdateSession?.(session.id, { performanceId: lastChar });
+    } else {
+      onUpdateSession?.(session.id, { performanceId: normalized });
+    }
   };
 
   const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
