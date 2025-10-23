@@ -9,6 +9,7 @@ export const bdeMachines = pgTable("bde_machines", {
   machineId: text("machine_id").notNull().unique(),
   password: text("password").notNull(),
   department: text("department").notNull(),
+  isAdmin: boolean("is_admin").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
