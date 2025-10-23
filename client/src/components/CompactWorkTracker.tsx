@@ -69,7 +69,7 @@ export default function CompactWorkTracker({
   
   const lastKeyTimeRef = useRef<number>(0);
   const isScanningRef = useRef<boolean>(false);
-  const hasBeenClearedRef = useRef<boolean>(false);
+  const preScanValueRef = useRef<string>("");
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -171,78 +171,118 @@ export default function CompactWorkTracker({
     return text.split('').map(char => charMap[char] || char).join('');
   };
 
-  const detectBarcodeScanning = () => {
+  const handlePartNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    const normalized = normalizeGermanChars(newValue);
+    
     const now = Date.now();
     const timeDiff = now - lastKeyTimeRef.current;
-    
-    if (timeDiff > 0 && timeDiff < 50) {
-      if (!isScanningRef.current) {
-        isScanningRef.current = true;
-        hasBeenClearedRef.current = false;
-      }
-    }
-    
     lastKeyTimeRef.current = now;
     
     if (scanTimeoutRef.current) {
       clearTimeout(scanTimeoutRef.current);
     }
     
-    scanTimeoutRef.current = setTimeout(() => {
-      isScanningRef.current = false;
-      hasBeenClearedRef.current = false;
-    }, 100);
-  };
-
-  const handlePartNumberKeyDown = () => {
-    detectBarcodeScanning();
-  };
-
-  const handleOrderNumberKeyDown = () => {
-    detectBarcodeScanning();
-  };
-
-  const handlePerformanceIdKeyDown = () => {
-    detectBarcodeScanning();
-  };
-
-  const handlePartNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    const normalized = normalizeGermanChars(newValue);
+    const wasScanning = isScanningRef.current;
+    const isRapidTyping = timeDiff > 0 && timeDiff < 50;
     
-    if (isScanningRef.current && !hasBeenClearedRef.current && session.partNumber) {
-      hasBeenClearedRef.current = true;
-      const lastChar = normalized.slice(-1);
-      onUpdateSession?.(session.id, { partNumber: lastChar });
+    if (isRapidTyping) {
+      if (!wasScanning && session.partNumber) {
+        preScanValueRef.current = session.partNumber;
+        isScanningRef.current = true;
+        const scannedPortion = normalized.startsWith(preScanValueRef.current) 
+          ? normalized.slice(preScanValueRef.current.length)
+          : normalized;
+        onUpdateSession?.(session.id, { partNumber: scannedPortion });
+      } else {
+        onUpdateSession?.(session.id, { partNumber: normalized });
+      }
     } else {
+      isScanningRef.current = false;
+      preScanValueRef.current = "";
       onUpdateSession?.(session.id, { partNumber: normalized });
     }
+    
+    scanTimeoutRef.current = setTimeout(() => {
+      isScanningRef.current = false;
+      preScanValueRef.current = "";
+    }, 100);
   };
 
   const handleOrderNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     const normalized = normalizeGermanChars(newValue);
     
-    if (isScanningRef.current && !hasBeenClearedRef.current && session.orderNumber) {
-      hasBeenClearedRef.current = true;
-      const lastChar = normalized.slice(-1);
-      onUpdateSession?.(session.id, { orderNumber: lastChar });
+    const now = Date.now();
+    const timeDiff = now - lastKeyTimeRef.current;
+    lastKeyTimeRef.current = now;
+    
+    if (scanTimeoutRef.current) {
+      clearTimeout(scanTimeoutRef.current);
+    }
+    
+    const wasScanning = isScanningRef.current;
+    const isRapidTyping = timeDiff > 0 && timeDiff < 50;
+    
+    if (isRapidTyping) {
+      if (!wasScanning && session.orderNumber) {
+        preScanValueRef.current = session.orderNumber;
+        isScanningRef.current = true;
+        const scannedPortion = normalized.startsWith(preScanValueRef.current) 
+          ? normalized.slice(preScanValueRef.current.length)
+          : normalized;
+        onUpdateSession?.(session.id, { orderNumber: scannedPortion });
+      } else {
+        onUpdateSession?.(session.id, { orderNumber: normalized });
+      }
     } else {
+      isScanningRef.current = false;
+      preScanValueRef.current = "";
       onUpdateSession?.(session.id, { orderNumber: normalized });
     }
+    
+    scanTimeoutRef.current = setTimeout(() => {
+      isScanningRef.current = false;
+      preScanValueRef.current = "";
+    }, 100);
   };
 
   const handlePerformanceIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     const normalized = normalizeGermanChars(newValue);
     
-    if (isScanningRef.current && !hasBeenClearedRef.current && session.performanceId) {
-      hasBeenClearedRef.current = true;
-      const lastChar = normalized.slice(-1);
-      onUpdateSession?.(session.id, { performanceId: lastChar });
+    const now = Date.now();
+    const timeDiff = now - lastKeyTimeRef.current;
+    lastKeyTimeRef.current = now;
+    
+    if (scanTimeoutRef.current) {
+      clearTimeout(scanTimeoutRef.current);
+    }
+    
+    const wasScanning = isScanningRef.current;
+    const isRapidTyping = timeDiff > 0 && timeDiff < 50;
+    
+    if (isRapidTyping) {
+      if (!wasScanning && session.performanceId) {
+        preScanValueRef.current = session.performanceId;
+        isScanningRef.current = true;
+        const scannedPortion = normalized.startsWith(preScanValueRef.current) 
+          ? normalized.slice(preScanValueRef.current.length)
+          : normalized;
+        onUpdateSession?.(session.id, { performanceId: scannedPortion });
+      } else {
+        onUpdateSession?.(session.id, { performanceId: normalized });
+      }
     } else {
+      isScanningRef.current = false;
+      preScanValueRef.current = "";
       onUpdateSession?.(session.id, { performanceId: normalized });
     }
+    
+    scanTimeoutRef.current = setTimeout(() => {
+      isScanningRef.current = false;
+      preScanValueRef.current = "";
+    }, 100);
   };
 
   const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -303,7 +343,6 @@ export default function CompactWorkTracker({
                   <Input
                     value={session.partNumber}
                     onChange={handlePartNumberChange}
-                    onKeyDown={handlePartNumberKeyDown}
                     onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Part Number"
@@ -329,7 +368,6 @@ export default function CompactWorkTracker({
                   <Input
                     value={session.orderNumber}
                     onChange={handleOrderNumberChange}
-                    onKeyDown={handleOrderNumberKeyDown}
                     onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Order Number"
@@ -355,7 +393,6 @@ export default function CompactWorkTracker({
                   <Input
                     value={session.performanceId}
                     onChange={handlePerformanceIdChange}
-                    onKeyDown={handlePerformanceIdKeyDown}
                     onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Performance ID"
