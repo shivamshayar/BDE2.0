@@ -67,12 +67,20 @@ export default function CompactWorkTracker({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerType, setDrawerType] = useState<"part" | "order" | "performance">("part");
   
-  const lastKeyTimeRef = useRef<number>(0);
-  const isScanningRef = useRef<boolean>(false);
+  const partLastKeyTimeRef = useRef<number>(0);
+  const partIsScanningRef = useRef<boolean>(false);
+  const partScanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stablePartValueRef = useRef<string>("");
+  
+  const orderLastKeyTimeRef = useRef<number>(0);
+  const orderIsScanningRef = useRef<boolean>(false);
+  const orderScanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stableOrderValueRef = useRef<string>("");
+  
+  const perfLastKeyTimeRef = useRef<number>(0);
+  const perfIsScanningRef = useRef<boolean>(false);
+  const perfScanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stablePerformanceValueRef = useRef<string>("");
-  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setLocalDuration(session.duration);
@@ -178,31 +186,31 @@ export default function CompactWorkTracker({
     const normalized = normalizeGermanChars(newValue);
     
     const now = Date.now();
-    const timeDiff = now - lastKeyTimeRef.current;
-    lastKeyTimeRef.current = now;
+    const timeDiff = now - partLastKeyTimeRef.current;
+    partLastKeyTimeRef.current = now;
     
-    if (scanTimeoutRef.current) {
-      clearTimeout(scanTimeoutRef.current);
+    if (partScanTimeoutRef.current) {
+      clearTimeout(partScanTimeoutRef.current);
     }
     
-    const wasScanning = isScanningRef.current;
+    const wasScanning = partIsScanningRef.current;
     const isRapidTyping = timeDiff > 0 && timeDiff < 50;
     
-    if (isRapidTyping) {
-      if (!wasScanning) {
-        isScanningRef.current = true;
-        const lastChar = normalized.slice(-1);
-        onUpdateSession?.(session.id, { partNumber: lastChar });
-      } else {
-        onUpdateSession?.(session.id, { partNumber: normalized });
-      }
+    if (isRapidTyping && wasScanning) {
+      onUpdateSession?.(session.id, { partNumber: normalized });
+    } else if (isRapidTyping && !wasScanning) {
+      partIsScanningRef.current = true;
+      const cleanValue = normalized.startsWith(stablePartValueRef.current) && stablePartValueRef.current
+        ? normalized.slice(stablePartValueRef.current.length)
+        : normalized;
+      onUpdateSession?.(session.id, { partNumber: cleanValue });
     } else {
-      isScanningRef.current = false;
+      partIsScanningRef.current = false;
       onUpdateSession?.(session.id, { partNumber: normalized });
     }
     
-    scanTimeoutRef.current = setTimeout(() => {
-      isScanningRef.current = false;
+    partScanTimeoutRef.current = setTimeout(() => {
+      partIsScanningRef.current = false;
     }, 100);
   };
 
@@ -211,31 +219,31 @@ export default function CompactWorkTracker({
     const normalized = normalizeGermanChars(newValue);
     
     const now = Date.now();
-    const timeDiff = now - lastKeyTimeRef.current;
-    lastKeyTimeRef.current = now;
+    const timeDiff = now - orderLastKeyTimeRef.current;
+    orderLastKeyTimeRef.current = now;
     
-    if (scanTimeoutRef.current) {
-      clearTimeout(scanTimeoutRef.current);
+    if (orderScanTimeoutRef.current) {
+      clearTimeout(orderScanTimeoutRef.current);
     }
     
-    const wasScanning = isScanningRef.current;
+    const wasScanning = orderIsScanningRef.current;
     const isRapidTyping = timeDiff > 0 && timeDiff < 50;
     
-    if (isRapidTyping) {
-      if (!wasScanning) {
-        isScanningRef.current = true;
-        const lastChar = normalized.slice(-1);
-        onUpdateSession?.(session.id, { orderNumber: lastChar });
-      } else {
-        onUpdateSession?.(session.id, { orderNumber: normalized });
-      }
+    if (isRapidTyping && wasScanning) {
+      onUpdateSession?.(session.id, { orderNumber: normalized });
+    } else if (isRapidTyping && !wasScanning) {
+      orderIsScanningRef.current = true;
+      const cleanValue = normalized.startsWith(stableOrderValueRef.current) && stableOrderValueRef.current
+        ? normalized.slice(stableOrderValueRef.current.length)
+        : normalized;
+      onUpdateSession?.(session.id, { orderNumber: cleanValue });
     } else {
-      isScanningRef.current = false;
+      orderIsScanningRef.current = false;
       onUpdateSession?.(session.id, { orderNumber: normalized });
     }
     
-    scanTimeoutRef.current = setTimeout(() => {
-      isScanningRef.current = false;
+    orderScanTimeoutRef.current = setTimeout(() => {
+      orderIsScanningRef.current = false;
     }, 100);
   };
 
@@ -244,31 +252,31 @@ export default function CompactWorkTracker({
     const normalized = normalizeGermanChars(newValue);
     
     const now = Date.now();
-    const timeDiff = now - lastKeyTimeRef.current;
-    lastKeyTimeRef.current = now;
+    const timeDiff = now - perfLastKeyTimeRef.current;
+    perfLastKeyTimeRef.current = now;
     
-    if (scanTimeoutRef.current) {
-      clearTimeout(scanTimeoutRef.current);
+    if (perfScanTimeoutRef.current) {
+      clearTimeout(perfScanTimeoutRef.current);
     }
     
-    const wasScanning = isScanningRef.current;
+    const wasScanning = perfIsScanningRef.current;
     const isRapidTyping = timeDiff > 0 && timeDiff < 50;
     
-    if (isRapidTyping) {
-      if (!wasScanning) {
-        isScanningRef.current = true;
-        const lastChar = normalized.slice(-1);
-        onUpdateSession?.(session.id, { performanceId: lastChar });
-      } else {
-        onUpdateSession?.(session.id, { performanceId: normalized });
-      }
+    if (isRapidTyping && wasScanning) {
+      onUpdateSession?.(session.id, { performanceId: normalized });
+    } else if (isRapidTyping && !wasScanning) {
+      perfIsScanningRef.current = true;
+      const cleanValue = normalized.startsWith(stablePerformanceValueRef.current) && stablePerformanceValueRef.current
+        ? normalized.slice(stablePerformanceValueRef.current.length)
+        : normalized;
+      onUpdateSession?.(session.id, { performanceId: cleanValue });
     } else {
-      isScanningRef.current = false;
+      perfIsScanningRef.current = false;
       onUpdateSession?.(session.id, { performanceId: normalized });
     }
     
-    scanTimeoutRef.current = setTimeout(() => {
-      isScanningRef.current = false;
+    perfScanTimeoutRef.current = setTimeout(() => {
+      perfIsScanningRef.current = false;
     }, 100);
   };
 
