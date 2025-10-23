@@ -3,7 +3,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Play, Square, History } from "lucide-react";
+import { Play, Square, History, ChevronDown } from "lucide-react";
+import BottomDrawer from "./BottomDrawer";
 import WorkHistoryDialog from "./WorkHistoryDialog";
 import {
   AlertDialog,
@@ -63,6 +64,8 @@ export default function CompactWorkTracker({
   const [showStopDialog, setShowStopDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [localDuration, setLocalDuration] = useState(session.duration);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerType, setDrawerType] = useState<"part" | "order" | "performance">("part");
 
   useEffect(() => {
     setLocalDuration(session.duration);
@@ -130,6 +133,24 @@ export default function CompactWorkTracker({
 
   const formatTime = (num: number) => num.toString().padStart(2, "0");
 
+  const openDrawer = (type: "part" | "order" | "performance") => {
+    if (!session.isRunning) {
+      setDrawerType(type);
+      setDrawerOpen(true);
+    }
+  };
+
+  const handleSelectValue = (value: string) => {
+    if (drawerType === "part") {
+      onUpdateSession?.(session.id, { partNumber: value });
+    } else if (drawerType === "order") {
+      onUpdateSession?.(session.id, { orderNumber: value });
+    } else {
+      onUpdateSession?.(session.id, { performanceId: value });
+    }
+    setDrawerOpen(false);
+  };
+
   const canStart = !session.isRunning && session.partNumber && session.orderNumber && session.performanceId;
 
   return (
@@ -182,56 +203,74 @@ export default function CompactWorkTracker({
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-muted-foreground">Part Number</label>
-                <Input
-                  list="part-numbers-list"
-                  value={session.partNumber}
-                  onChange={(e) => onUpdateSession?.(session.id, { partNumber: e.target.value })}
-                  disabled={session.isRunning}
-                  placeholder="Type or scan Part Number"
-                  className="h-14 text-xl font-bold"
-                  data-testid="input-part-number"
-                />
-                <datalist id="part-numbers-list">
-                  {partNumbers.map((pn) => (
-                    <option key={pn} value={pn} />
-                  ))}
-                </datalist>
+                <div className="flex gap-2">
+                  <Input
+                    value={session.partNumber}
+                    onChange={(e) => onUpdateSession?.(session.id, { partNumber: e.target.value })}
+                    disabled={session.isRunning}
+                    placeholder="Type or scan Part Number"
+                    className="h-14 text-xl font-bold flex-1"
+                    data-testid="input-part-number"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => openDrawer("part")}
+                    disabled={session.isRunning}
+                    className="h-14 w-14 shrink-0"
+                    data-testid="button-dropdown-part"
+                  >
+                    <ChevronDown className="w-6 h-6" />
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-muted-foreground">Order Number</label>
-                <Input
-                  list="order-numbers-list"
-                  value={session.orderNumber}
-                  onChange={(e) => onUpdateSession?.(session.id, { orderNumber: e.target.value })}
-                  disabled={session.isRunning}
-                  placeholder="Type or scan Order Number"
-                  className="h-14 text-xl font-bold"
-                  data-testid="input-order-number"
-                />
-                <datalist id="order-numbers-list">
-                  {orderNumbers.map((on) => (
-                    <option key={on} value={on} />
-                  ))}
-                </datalist>
+                <div className="flex gap-2">
+                  <Input
+                    value={session.orderNumber}
+                    onChange={(e) => onUpdateSession?.(session.id, { orderNumber: e.target.value })}
+                    disabled={session.isRunning}
+                    placeholder="Type or scan Order Number"
+                    className="h-14 text-xl font-bold flex-1"
+                    data-testid="input-order-number"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => openDrawer("order")}
+                    disabled={session.isRunning}
+                    className="h-14 w-14 shrink-0"
+                    data-testid="button-dropdown-order"
+                  >
+                    <ChevronDown className="w-6 h-6" />
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-muted-foreground">Performance ID</label>
-                <Input
-                  list="performance-ids-list"
-                  value={session.performanceId}
-                  onChange={(e) => onUpdateSession?.(session.id, { performanceId: e.target.value })}
-                  disabled={session.isRunning}
-                  placeholder="Type or scan Performance ID"
-                  className="h-14 text-xl font-bold"
-                  data-testid="input-performance-id"
-                />
-                <datalist id="performance-ids-list">
-                  {performanceIds.map((pid) => (
-                    <option key={pid} value={pid} />
-                  ))}
-                </datalist>
+                <div className="flex gap-2">
+                  <Input
+                    value={session.performanceId}
+                    onChange={(e) => onUpdateSession?.(session.id, { performanceId: e.target.value })}
+                    disabled={session.isRunning}
+                    placeholder="Type or scan Performance ID"
+                    className="h-14 text-xl font-bold flex-1"
+                    data-testid="input-performance-id"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => openDrawer("performance")}
+                    disabled={session.isRunning}
+                    className="h-14 w-14 shrink-0"
+                    data-testid="button-dropdown-performance"
+                  >
+                    <ChevronDown className="w-6 h-6" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -338,6 +377,27 @@ export default function CompactWorkTracker({
           )}
         </div>
       </div>
+
+      {/* Bottom Drawer */}
+      <BottomDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title={
+          drawerType === "part"
+            ? "Select Part Number"
+            : drawerType === "order"
+            ? "Select Order Number"
+            : "Select Performance ID"
+        }
+        options={
+          drawerType === "part"
+            ? partNumbers
+            : drawerType === "order"
+            ? orderNumbers
+            : performanceIds
+        }
+        onSelect={handleSelectValue}
+      />
 
       {/* Stop Confirmation Dialog */}
       <AlertDialog open={showStopDialog} onOpenChange={setShowStopDialog}>
