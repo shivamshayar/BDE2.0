@@ -26,6 +26,7 @@ import { Plus, Trash2, Users, Package, Activity, ClipboardList, Search, Monitor,
 import { BarcodeDisplay } from "@/components/BarcodeDisplay";
 import { downloadBarcodesAsPDF } from "@/lib/barcode-utils";
 import { useToast } from "@/hooks/use-toast";
+import { AVATAR_IMAGES } from "@/lib/avatars";
 
 interface User {
   id: string;
@@ -84,9 +85,7 @@ export default function AdminDashboard({
     newPassword: "",
     confirmPassword: "",
   });
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [selectedAvatarIndex, setSelectedAvatarIndex] = useState<number>(0);
 
   const { toast } = useToast();
   
@@ -187,48 +186,8 @@ export default function AdminDashboard({
       newPassword: "",
       confirmPassword: "",
     });
-    setSelectedImage(null);
-    setImagePreview("");
+    setSelectedAvatarIndex(0);
     setShowAddDialog(true);
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadImage = async (): Promise<string | null> => {
-    if (!selectedImage) return null;
-
-    const formData = new FormData();
-    formData.append("image", selectedImage);
-
-    try {
-      setIsUploadingImage(true);
-      const response = await fetch("/api/upload/user-image", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to upload image");
-      }
-
-      const data = await response.json();
-      return data.imageUrl;
-    } catch (error) {
-      console.error("Image upload error:", error);
-      return null;
-    } finally {
-      setIsUploadingImage(false);
-    }
   };
 
   const handleSubmitAdd = async () => {
@@ -246,17 +205,8 @@ export default function AdminDashboard({
           return;
         }
         
-        // Upload image if selected
-        let imageUrl = null;
-        if (selectedImage) {
-          imageUrl = await uploadImage();
-          if (!imageUrl) {
-            alert("Failed to upload image");
-            return;
-          }
-        }
-        
-        await onAddUser?.(formData.name, imageUrl);
+        const avatarUrl = AVATAR_IMAGES[selectedAvatarIndex];
+        await onAddUser?.(formData.name, avatarUrl);
       } else if (activeTab === "parts") {
         if (!formData.name) {
           alert("Please enter a part number");
@@ -679,24 +629,39 @@ export default function AdminDashboard({
                       data-testid="input-add-name" 
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="image">Profile Image (optional)</Label>
-                    <Input 
-                      id="image" 
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      data-testid="input-add-image" 
-                    />
-                    {imagePreview && (
-                      <div className="mt-2">
-                        <img 
-                          src={imagePreview} 
-                          alt="Preview" 
-                          className="w-24 h-24 object-cover rounded-lg border"
-                        />
+                  <div className="space-y-3">
+                    <Label>Select Profile Picture</Label>
+                    <div className="grid grid-cols-5 gap-2 max-h-64 overflow-y-auto p-2 border rounded-lg">
+                      {AVATAR_IMAGES.map((avatar, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => setSelectedAvatarIndex(index)}
+                          className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all hover-elevate ${
+                            selectedAvatarIndex === index 
+                              ? 'border-primary ring-2 ring-primary ring-offset-2' 
+                              : 'border-border'
+                          }`}
+                          data-testid={`button-avatar-${index}`}
+                        >
+                          <img 
+                            src={avatar} 
+                            alt={`Avatar ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                      <Avatar className="w-16 h-16 border-2">
+                        <AvatarImage src={AVATAR_IMAGES[selectedAvatarIndex]} />
+                        <AvatarFallback>?</AvatarFallback>
+                      </Avatar>
+                      <div className="text-sm">
+                        <p className="font-semibold">Selected Avatar</p>
+                        <p className="text-muted-foreground">Avatar {selectedAvatarIndex + 1} of {AVATAR_IMAGES.length}</p>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </>
               ) : (
