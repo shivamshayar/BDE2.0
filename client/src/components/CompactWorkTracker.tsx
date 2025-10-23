@@ -202,8 +202,7 @@ export default function CompactWorkTracker({
       onUpdateSession?.(session.id, { partNumber: normalized });
     } else if (isRapidTyping && !wasScanning) {
       partIsScanningRef.current = true;
-      const lastChar = normalized.slice(-1);
-      onUpdateSession?.(session.id, { partNumber: lastChar });
+      onUpdateSession?.(session.id, { partNumber: normalized });
     } else {
       partIsScanningRef.current = false;
       onUpdateSession?.(session.id, { partNumber: normalized });
@@ -236,8 +235,7 @@ export default function CompactWorkTracker({
       onUpdateSession?.(session.id, { orderNumber: normalized });
     } else if (isRapidTyping && !wasScanning) {
       orderIsScanningRef.current = true;
-      const lastChar = normalized.slice(-1);
-      onUpdateSession?.(session.id, { orderNumber: lastChar });
+      onUpdateSession?.(session.id, { orderNumber: normalized });
     } else {
       orderIsScanningRef.current = false;
       onUpdateSession?.(session.id, { orderNumber: normalized });
@@ -270,8 +268,7 @@ export default function CompactWorkTracker({
       onUpdateSession?.(session.id, { performanceId: normalized });
     } else if (isRapidTyping && !wasScanning) {
       perfIsScanningRef.current = true;
-      const lastChar = normalized.slice(-1);
-      onUpdateSession?.(session.id, { performanceId: lastChar });
+      onUpdateSession?.(session.id, { performanceId: normalized });
     } else {
       perfIsScanningRef.current = false;
       onUpdateSession?.(session.id, { performanceId: normalized });
