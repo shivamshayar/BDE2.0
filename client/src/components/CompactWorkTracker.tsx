@@ -78,14 +78,6 @@ export default function CompactWorkTracker({
     setLocalDuration(session.duration);
   }, [session.duration]);
 
-  useEffect(() => {
-    if (!isScanningRef.current) {
-      stablePartValueRef.current = session.partNumber;
-      stableOrderValueRef.current = session.orderNumber;
-      stablePerformanceValueRef.current = session.performanceId;
-    }
-  }, [session.partNumber, session.orderNumber, session.performanceId]);
-
   const initials = session.userName
     .split(" ")
     .map((n) => n[0])
@@ -286,7 +278,18 @@ export default function CompactWorkTracker({
     }, 100);
   };
 
-  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+  const handlePartNumberFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    stablePartValueRef.current = session.partNumber;
+    e.target.select();
+  };
+
+  const handleOrderNumberFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    stableOrderValueRef.current = session.orderNumber;
+    e.target.select();
+  };
+
+  const handlePerformanceIdFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    stablePerformanceValueRef.current = session.performanceId;
     e.target.select();
   };
 
@@ -344,7 +347,7 @@ export default function CompactWorkTracker({
                   <Input
                     value={session.partNumber}
                     onChange={handlePartNumberChange}
-                    onFocus={handleInputFocus}
+                    onFocus={handlePartNumberFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Part Number"
                     className="h-14 text-xl font-bold flex-1"
@@ -369,7 +372,7 @@ export default function CompactWorkTracker({
                   <Input
                     value={session.orderNumber}
                     onChange={handleOrderNumberChange}
-                    onFocus={handleInputFocus}
+                    onFocus={handleOrderNumberFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Order Number"
                     className="h-14 text-xl font-bold flex-1"
@@ -394,7 +397,7 @@ export default function CompactWorkTracker({
                   <Input
                     value={session.performanceId}
                     onChange={handlePerformanceIdChange}
-                    onFocus={handleInputFocus}
+                    onFocus={handlePerformanceIdFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Performance ID"
                     className="h-14 text-xl font-bold flex-1"
