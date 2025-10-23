@@ -78,6 +78,14 @@ export default function CompactWorkTracker({
     setLocalDuration(session.duration);
   }, [session.duration]);
 
+  useEffect(() => {
+    if (!isScanningRef.current) {
+      stablePartValueRef.current = session.partNumber;
+      stableOrderValueRef.current = session.orderNumber;
+      stablePerformanceValueRef.current = session.performanceId;
+    }
+  }, [session.partNumber, session.orderNumber, session.performanceId]);
+
   const initials = session.userName
     .split(" ")
     .map((n) => n[0])
@@ -200,7 +208,6 @@ export default function CompactWorkTracker({
       }
     } else {
       isScanningRef.current = false;
-      stablePartValueRef.current = normalized;
       onUpdateSession?.(session.id, { partNumber: normalized });
     }
     
@@ -236,7 +243,6 @@ export default function CompactWorkTracker({
       }
     } else {
       isScanningRef.current = false;
-      stableOrderValueRef.current = normalized;
       onUpdateSession?.(session.id, { orderNumber: normalized });
     }
     
@@ -272,7 +278,6 @@ export default function CompactWorkTracker({
       }
     } else {
       isScanningRef.current = false;
-      stablePerformanceValueRef.current = normalized;
       onUpdateSession?.(session.id, { performanceId: normalized });
     }
     
