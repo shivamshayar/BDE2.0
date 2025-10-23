@@ -14,6 +14,7 @@ import multer from "multer";
 import { writeFile } from "fs/promises";
 import { join } from "path";
 import { randomUUID } from "crypto";
+import bcrypt from "bcrypt";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -57,7 +58,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const machine = await storage.getBdeMachineByMachineId(machineId);
       
-      if (!machine || machine.password !== password) {
+      if (!machine) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, machine.password);
+      
+      if (!isPasswordValid) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
@@ -68,7 +75,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update last login
       await storage.updateBdeMachine(machine.id, { lastLoginAt: new Date() });
 
-      res.json({ machine: { ...machine, password: undefined } });
+      res.json({ 
+        machine: { 
+          ...machine, 
+          password: undefined 
+        } 
+      });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -94,7 +106,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: result.error.issues });
       }
 
-      const machine = await storage.createBdeMachine(result.data);
+      const hashedPassword = await bcrypt.hash(result.data.password, 10);
+      const machine = await storage.createBdeMachine({
+        ...result.data,
+        password: hashedPassword
+      });
       res.json({ ...machine, password: undefined });
     } catch (error: any) {
       console.error("Create machine error:", error);
@@ -114,7 +130,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Password is required" });
       }
 
-      const machine = await storage.updateBdeMachine(id, { password });
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const machine = await storage.updateBdeMachine(id, { password: hashedPassword });
       
       if (!machine) {
         return res.status(404).json({ error: "Machine not found" });
