@@ -133,6 +133,14 @@ export default function CompactWorkTracker({
 
   const formatTime = (num: number) => num.toString().padStart(2, "0");
 
+  const normalizeInput = (value: string): string => {
+    return value.replace(/ß/g, '-');
+  };
+
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.select();
+  };
+
   const openDrawer = (type: "part" | "order" | "performance") => {
     if (!session.isRunning) {
       setDrawerType(type);
@@ -206,7 +214,8 @@ export default function CompactWorkTracker({
                 <div className="flex gap-2">
                   <Input
                     value={session.partNumber}
-                    onChange={(e) => onUpdateSession?.(session.id, { partNumber: e.target.value })}
+                    onChange={(e) => onUpdateSession?.(session.id, { partNumber: normalizeInput(e.target.value) })}
+                    onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Part Number"
                     className="h-14 text-xl font-bold flex-1"
@@ -230,7 +239,8 @@ export default function CompactWorkTracker({
                 <div className="flex gap-2">
                   <Input
                     value={session.orderNumber}
-                    onChange={(e) => onUpdateSession?.(session.id, { orderNumber: e.target.value })}
+                    onChange={(e) => onUpdateSession?.(session.id, { orderNumber: normalizeInput(e.target.value) })}
+                    onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Order Number"
                     className="h-14 text-xl font-bold flex-1"
@@ -254,7 +264,8 @@ export default function CompactWorkTracker({
                 <div className="flex gap-2">
                   <Input
                     value={session.performanceId}
-                    onChange={(e) => onUpdateSession?.(session.id, { performanceId: e.target.value })}
+                    onChange={(e) => onUpdateSession?.(session.id, { performanceId: normalizeInput(e.target.value) })}
+                    onFocus={handleInputFocus}
                     disabled={session.isRunning}
                     placeholder="Type or scan Performance ID"
                     className="h-14 text-xl font-bold flex-1"
