@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import AdminDashboard from "@/components/AdminDashboard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { AppHeader } from "@/components/AppHeader";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -181,21 +182,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setLocation("/")}
-              data-testid="button-back-to-login"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <h1 className="text-xl font-semibold">Admin Panel</h1>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       {isLoading ? (
         <div className="flex items-center justify-center min-h-[60vh]">

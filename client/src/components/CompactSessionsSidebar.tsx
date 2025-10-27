@@ -17,6 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UserSession {
   id: string;
@@ -48,6 +49,7 @@ export default function CompactSessionsSidebar({
   onSettings,
   isAdmin = false,
 }: CompactSessionsSidebarProps) {
+  const { t } = useLanguage();
   const [longPressSession, setLongPressSession] = useState<string | null>(null);
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
 
@@ -125,10 +127,10 @@ export default function CompactSessionsSidebar({
                 <div className="text-sm">
                   <div className="font-semibold">{session.userName}</div>
                   {session.isRunning && (
-                    <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">● Timer Running</div>
+                    <div className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">● {t.tracker.timer}</div>
                   )}
                   {!session.isRunning && (
-                    <div className="text-xs text-muted-foreground mt-1">Long press to remove</div>
+                    <div className="text-xs text-muted-foreground mt-1">{t.tracker.removeUser}</div>
                   )}
                 </div>
               </TooltipContent>
@@ -150,7 +152,7 @@ export default function CompactSessionsSidebar({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right" className="bg-popover text-popover-foreground border shadow-xl">
-            <p className="text-sm font-medium">Add User Session</p>
+            <p className="text-sm font-medium">{t.add} {t.tracker.selectUser}</p>
           </TooltipContent>
         </Tooltip>
       </div>
@@ -170,7 +172,7 @@ export default function CompactSessionsSidebar({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right" className="bg-popover text-popover-foreground border shadow-xl">
-            <p className="text-sm font-medium">Settings</p>
+            <p className="text-sm font-medium">{t.admin.settings}</p>
           </TooltipContent>
         </Tooltip>
       )}
@@ -179,15 +181,15 @@ export default function CompactSessionsSidebar({
       <AlertDialog open={!!longPressSession} onOpenChange={(open) => !open && setLongPressSession(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove User Session?</AlertDialogTitle>
+            <AlertDialogTitle>{t.tracker.removeUser}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove {selectedSession?.userName} from the active sessions. This action cannot be undone.
+              {t.tracker.confirmRemove}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-remove">Cancel</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-remove">{t.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={handleRemove} data-testid="button-confirm-remove">
-              Remove
+              {t.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

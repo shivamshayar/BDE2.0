@@ -28,6 +28,7 @@ import { BarcodeDisplay } from "@/components/BarcodeDisplay";
 import { downloadBarcodesAsPDF } from "@/lib/barcode-utils";
 import { useToast } from "@/hooks/use-toast";
 import { AVATAR_IMAGES } from "@/lib/avatars";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface User {
   id: string;
@@ -71,6 +72,7 @@ export default function AdminDashboard({
   onAddPerformanceId,
   onResetPassword,
 }: AdminDashboardProps) {
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
@@ -276,7 +278,7 @@ export default function AdminDashboard({
       <div className="max-w-7xl mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-bold" data-testid="text-dashboard-title">
-            Admin Dashboard
+            {t.admin.title}
           </h1>
           <p className="text-muted-foreground mt-2">
             Manage BDE machines, users, and master data
@@ -287,23 +289,23 @@ export default function AdminDashboard({
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="machines" data-testid="tab-machines">
               <Monitor className="w-4 h-4 mr-2" />
-              BDE Machines
+              {t.admin.machines}
             </TabsTrigger>
             <TabsTrigger value="users" data-testid="tab-users">
               <Users className="w-4 h-4 mr-2" />
-              Users
+              {t.admin.users}
             </TabsTrigger>
             <TabsTrigger value="parts" data-testid="tab-parts">
               <Package className="w-4 h-4 mr-2" />
-              Part Numbers
+              {t.admin.partNumbers}
             </TabsTrigger>
             <TabsTrigger value="orders" data-testid="tab-orders">
               <ClipboardList className="w-4 h-4 mr-2" />
-              Order Numbers
+              {t.admin.orderNumbers}
             </TabsTrigger>
             <TabsTrigger value="performance" data-testid="tab-performance">
               <Activity className="w-4 h-4 mr-2" />
-              Performance IDs
+              {t.admin.performanceIds}
             </TabsTrigger>
           </TabsList>
 
@@ -313,12 +315,12 @@ export default function AdminDashboard({
               <CardHeader>
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div>
-                    <CardTitle>BDE Machines</CardTitle>
+                    <CardTitle>{t.admin.machines}</CardTitle>
                     <CardDescription>Manage machine IDs and credentials</CardDescription>
                   </div>
                   <Button onClick={handleOpenAddDialog} data-testid="button-add-machine">
                     <Plus className="w-4 h-4 mr-2" />
-                    Add BDE Machine
+                    {t.admin.addMachine}
                   </Button>
                 </div>
               </CardHeader>
@@ -326,11 +328,11 @@ export default function AdminDashboard({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Machine ID</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Admin</TableHead>
+                      <TableHead>{t.admin.machineId}</TableHead>
+                      <TableHead>{t.admin.department}</TableHead>
+                      <TableHead>{t.admin.admin}</TableHead>
                       <TableHead>Created At</TableHead>
-                      <TableHead>Last Login</TableHead>
+                      <TableHead>{t.admin.lastLogin}</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -341,9 +343,9 @@ export default function AdminDashboard({
                         <TableCell>{machine.department || "-"}</TableCell>
                         <TableCell>
                           {machine.isAdmin ? (
-                            <Badge variant="default" data-testid={`badge-admin-${machine.id}`}>Admin</Badge>
+                            <Badge variant="default" data-testid={`badge-admin-${machine.id}`}>{t.admin.admin}</Badge>
                           ) : (
-                            <Badge variant="secondary" data-testid={`badge-user-${machine.id}`}>User</Badge>
+                            <Badge variant="secondary" data-testid={`badge-user-${machine.id}`}>{t.admin.user}</Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
@@ -376,14 +378,14 @@ export default function AdminDashboard({
               <CardHeader>
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div>
-                    <CardTitle>Users</CardTitle>
+                    <CardTitle>{t.admin.users}</CardTitle>
                     <CardDescription>Manage worker profiles</CardDescription>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
-                        placeholder="Search users..."
+                        placeholder={`${t.search}...`}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-9 w-64"
@@ -392,7 +394,7 @@ export default function AdminDashboard({
                     </div>
                     <Button onClick={handleOpenAddDialog} data-testid="button-add-user">
                       <Plus className="w-4 h-4 mr-2" />
-                      Add User
+                      {t.admin.addUser}
                     </Button>
                   </div>
                 </div>
@@ -401,7 +403,7 @@ export default function AdminDashboard({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>User</TableHead>
+                      <TableHead>{t.admin.user}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -432,7 +434,7 @@ export default function AdminDashboard({
               <CardHeader>
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div>
-                    <CardTitle>Part Numbers</CardTitle>
+                    <CardTitle>{t.admin.partNumbers}</CardTitle>
                     <CardDescription>Manage part number catalog with barcodes</CardDescription>
                   </div>
                   <div className="flex gap-2">
@@ -442,11 +444,11 @@ export default function AdminDashboard({
                       data-testid="button-download-part-barcodes"
                     >
                       <Download className="w-4 h-4 mr-2" />
-                      Download All Barcodes
+                      {t.admin.downloadBarcodes}
                     </Button>
                     <Button onClick={handleOpenAddDialog} data-testid="button-add-part">
                       <Plus className="w-4 h-4 mr-2" />
-                      Add Part Number
+                      {t.admin.addPartNumber}
                     </Button>
                   </div>
                 </div>
@@ -455,8 +457,8 @@ export default function AdminDashboard({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Part Number</TableHead>
-                      <TableHead>Barcode</TableHead>
+                      <TableHead>{t.tracker.partNumber}</TableHead>
+                      <TableHead>{t.admin.barcode}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -480,7 +482,7 @@ export default function AdminDashboard({
               <CardHeader>
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div>
-                    <CardTitle>Order Numbers</CardTitle>
+                    <CardTitle>{t.admin.orderNumbers}</CardTitle>
                     <CardDescription>Manage order number catalog with barcodes</CardDescription>
                   </div>
                   <div className="flex gap-2">
@@ -490,11 +492,11 @@ export default function AdminDashboard({
                       data-testid="button-download-order-barcodes"
                     >
                       <Download className="w-4 h-4 mr-2" />
-                      Download All Barcodes
+                      {t.admin.downloadBarcodes}
                     </Button>
                     <Button onClick={handleOpenAddDialog} data-testid="button-add-order">
                       <Plus className="w-4 h-4 mr-2" />
-                      Add Order Number
+                      {t.admin.addOrderNumber}
                     </Button>
                   </div>
                 </div>
@@ -503,8 +505,8 @@ export default function AdminDashboard({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Order Number</TableHead>
-                      <TableHead>Barcode</TableHead>
+                      <TableHead>{t.tracker.orderNumber}</TableHead>
+                      <TableHead>{t.admin.barcode}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -528,7 +530,7 @@ export default function AdminDashboard({
               <CardHeader>
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div>
-                    <CardTitle>Performance IDs</CardTitle>
+                    <CardTitle>{t.admin.performanceIds}</CardTitle>
                     <CardDescription>Manage performance ID catalog with barcodes</CardDescription>
                   </div>
                   <div className="flex gap-2">
@@ -538,11 +540,11 @@ export default function AdminDashboard({
                       data-testid="button-download-performance-barcodes"
                     >
                       <Download className="w-4 h-4 mr-2" />
-                      Download All Barcodes
+                      {t.admin.downloadBarcodes}
                     </Button>
                     <Button onClick={handleOpenAddDialog} data-testid="button-add-performance">
                       <Plus className="w-4 h-4 mr-2" />
-                      Add Performance ID
+                      {t.admin.addPerformanceId}
                     </Button>
                   </div>
                 </div>
@@ -551,8 +553,8 @@ export default function AdminDashboard({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Performance ID</TableHead>
-                      <TableHead>Barcode</TableHead>
+                      <TableHead>{t.tracker.performanceId}</TableHead>
+                      <TableHead>{t.admin.barcode}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -577,14 +579,14 @@ export default function AdminDashboard({
             <DialogHeader>
               <DialogTitle>
                 {activeTab === "machines" 
-                  ? "Add New BDE Machine" 
+                  ? t.admin.addMachine
                   : activeTab === "users"
-                  ? "Add New User"
+                  ? t.admin.addUser
                   : activeTab === "parts"
-                  ? "Add New Part Number"
+                  ? t.admin.addPartNumber
                   : activeTab === "orders"
-                  ? "Add New Order Number"
-                  : "Add New Performance ID"
+                  ? t.admin.addOrderNumber
+                  : t.admin.addPerformanceId
                 }
               </DialogTitle>
               <DialogDescription>
@@ -598,7 +600,7 @@ export default function AdminDashboard({
               {activeTab === "machines" ? (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="machineId">Machine ID</Label>
+                    <Label htmlFor="machineId">{t.admin.machineId}</Label>
                     <Input 
                       id="machineId" 
                       placeholder="e.g., BDE-2" 
@@ -608,7 +610,7 @@ export default function AdminDashboard({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="department">Department</Label>
+                    <Label htmlFor="department">{t.admin.department}</Label>
                     <Input 
                       id="department" 
                       placeholder="e.g., Production" 
@@ -639,14 +641,14 @@ export default function AdminDashboard({
                       htmlFor="isAdmin"
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                     >
-                      Make this machine an administrator
+                      {t.admin.isAdmin}
                     </Label>
                   </div>
                 </>
               ) : activeTab === "users" ? (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
+                    <Label htmlFor="name">{t.admin.name}</Label>
                     <Input 
                       id="name" 
                       placeholder="Enter name" 
@@ -656,7 +658,7 @@ export default function AdminDashboard({
                     />
                   </div>
                   <div className="space-y-3">
-                    <Label>Select Profile Picture</Label>
+                    <Label>{t.admin.selectImage}</Label>
                     <div className="grid grid-cols-5 gap-2 max-h-64 overflow-y-auto p-2 border rounded-lg">
                       {AVATAR_IMAGES.map((avatar, index) => (
                         <button
@@ -694,10 +696,10 @@ export default function AdminDashboard({
                 <div className="space-y-2">
                   <Label htmlFor="name">
                     {activeTab === "parts" 
-                      ? "Part Number" 
+                      ? t.tracker.partNumber
                       : activeTab === "orders"
-                      ? "Order Number"
-                      : "Performance ID"
+                      ? t.tracker.orderNumber
+                      : t.tracker.performanceId
                     }
                   </Label>
                   <Input 
@@ -717,14 +719,14 @@ export default function AdminDashboard({
                 disabled={isSubmitting}
                 data-testid="button-cancel-add"
               >
-                Cancel
+                {t.cancel}
               </Button>
               <Button 
                 onClick={handleSubmitAdd} 
                 disabled={isSubmitting}
                 data-testid="button-confirm-add"
               >
-                {isSubmitting ? "Adding..." : "Add"}
+                {isSubmitting ? `${t.add}...` : t.add}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -770,7 +772,7 @@ export default function AdminDashboard({
                 disabled={isSubmitting}
                 data-testid="button-cancel-reset"
               >
-                Cancel
+                {t.cancel}
               </Button>
               <Button 
                 onClick={handleSubmitResetPassword} 

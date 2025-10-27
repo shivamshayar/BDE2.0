@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, AlertCircle } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 interface MachineLoginFormProps {
   onLogin?: (machineId: string, password: string) => void;
@@ -15,6 +17,7 @@ interface MachineLoginFormProps {
 export default function MachineLoginForm({ onLogin, error, loading }: MachineLoginFormProps) {
   const [machineId, setMachineId] = useState("");
   const [password, setPassword] = useState("");
+  const { t } = useLanguage();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,15 +28,18 @@ export default function MachineLoginForm({ onLogin, error, loading }: MachineLog
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
       <Card className="w-full max-w-md shadow-2xl border-0">
         <CardHeader className="space-y-4 text-center pb-8">
           <div className="mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
             <Lock className="w-10 h-10 text-primary-foreground" />
           </div>
           <div>
-            <CardTitle className="text-3xl font-bold gradient-text">BDE Work Tracking</CardTitle>
+            <CardTitle className="text-3xl font-bold gradient-text">{t.login.title}</CardTitle>
             <CardDescription className="mt-3 text-base">
-              Sign in to your machine to start tracking work
+              {t.login.title}
             </CardDescription>
           </div>
         </CardHeader>
@@ -47,12 +53,12 @@ export default function MachineLoginForm({ onLogin, error, loading }: MachineLog
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="machineId" className="text-sm font-semibold">Machine ID</Label>
+              <Label htmlFor="machineId" className="text-sm font-semibold">{t.login.machineId}</Label>
               <Input
                 id="machineId"
                 data-testid="input-machine-id"
                 type="text"
-                placeholder="Enter machine ID"
+                placeholder={t.login.enterMachineId}
                 value={machineId}
                 onChange={(e) => setMachineId(e.target.value)}
                 className="h-12 border-2 focus:border-primary transition-colors"
@@ -61,12 +67,12 @@ export default function MachineLoginForm({ onLogin, error, loading }: MachineLog
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-semibold">Password</Label>
+              <Label htmlFor="password" className="text-sm font-semibold">{t.login.password}</Label>
               <Input
                 id="password"
                 data-testid="input-password"
                 type="password"
-                placeholder="Enter password"
+                placeholder={t.login.enterPassword}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-12 border-2 focus:border-primary transition-colors"
@@ -80,7 +86,7 @@ export default function MachineLoginForm({ onLogin, error, loading }: MachineLog
               data-testid="button-login"
               disabled={loading}
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? t.loading : t.login.loginButton}
             </Button>
           </form>
         </CardContent>

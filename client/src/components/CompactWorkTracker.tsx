@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UserSession {
   id: string;
@@ -61,6 +62,7 @@ export default function CompactWorkTracker({
   onUpdateSession,
   onStopSession,
 }: CompactWorkTrackerProps) {
+  const { t } = useLanguage();
   const [showStopDialog, setShowStopDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [localDuration, setLocalDuration] = useState(session.duration);
@@ -309,7 +311,7 @@ export default function CompactWorkTracker({
               data-testid="button-work-history"
             >
               <History className="w-4 h-4 mr-2" />
-              History
+              {t.tracker.workHistory}
             </Button>
             <Badge variant="outline" className="text-lg px-4 py-2 font-mono font-bold border-2">
               {machineId}
@@ -343,7 +345,7 @@ export default function CompactWorkTracker({
             {/* Input Fields */}
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-muted-foreground">Part Number</label>
+                <label className="text-sm font-semibold text-muted-foreground">{t.tracker.partNumber}</label>
                 <div className="flex gap-2">
                   <Input
                     ref={partInputRef}
@@ -351,7 +353,7 @@ export default function CompactWorkTracker({
                     onChange={handlePartNumberChange}
                     onFocus={handlePartNumberFocus}
                     disabled={session.isRunning}
-                    placeholder="Type or scan Part Number"
+                    placeholder={t.tracker.typeToSearch}
                     className="h-14 text-xl font-bold flex-1"
                     data-testid="input-part-number"
                   />
@@ -369,7 +371,7 @@ export default function CompactWorkTracker({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-muted-foreground">Order Number</label>
+                <label className="text-sm font-semibold text-muted-foreground">{t.tracker.orderNumber}</label>
                 <div className="flex gap-2">
                   <Input
                     ref={orderInputRef}
@@ -377,7 +379,7 @@ export default function CompactWorkTracker({
                     onChange={handleOrderNumberChange}
                     onFocus={handleOrderNumberFocus}
                     disabled={session.isRunning}
-                    placeholder="Type or scan Order Number"
+                    placeholder={t.tracker.typeToSearch}
                     className="h-14 text-xl font-bold flex-1"
                     data-testid="input-order-number"
                   />
@@ -395,7 +397,7 @@ export default function CompactWorkTracker({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-muted-foreground">Performance ID</label>
+                <label className="text-sm font-semibold text-muted-foreground">{t.tracker.performanceId}</label>
                 <div className="flex gap-2">
                   <Input
                     ref={perfInputRef}
@@ -403,7 +405,7 @@ export default function CompactWorkTracker({
                     onChange={handlePerformanceIdChange}
                     onFocus={handlePerformanceIdFocus}
                     disabled={session.isRunning}
-                    placeholder="Type or scan Performance ID"
+                    placeholder={t.tracker.typeToSearch}
                     className="h-14 text-xl font-bold flex-1"
                     data-testid="input-performance-id"
                   />
@@ -465,7 +467,7 @@ export default function CompactWorkTracker({
               {/* Recent Part Numbers */}
               {recentPartNumbers.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Recent Part Numbers</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t.tracker.partNumber}</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {recentPartNumbers.map((part) => (
                       <Button
@@ -485,7 +487,7 @@ export default function CompactWorkTracker({
               {/* Recent Order Numbers */}
               {recentOrderNumbers.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Recent Order Numbers</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t.tracker.orderNumber}</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {recentOrderNumbers.map((order) => (
                       <Button
@@ -505,7 +507,7 @@ export default function CompactWorkTracker({
               {/* Recent Performance IDs */}
               {recentPerformanceIds.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Recent Performance IDs</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t.tracker.performanceId}</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {recentPerformanceIds.map((perf) => (
                       <Button
@@ -532,10 +534,10 @@ export default function CompactWorkTracker({
         onClose={() => setDrawerOpen(false)}
         title={
           drawerType === "part"
-            ? "Select Part Number"
+            ? t.tracker.selectPartNumber
             : drawerType === "order"
-            ? "Select Order Number"
-            : "Select Performance ID"
+            ? t.tracker.selectOrderNumber
+            : t.tracker.selectPerformanceId
         }
         options={
           drawerType === "part"
@@ -551,15 +553,15 @@ export default function CompactWorkTracker({
       <AlertDialog open={showStopDialog} onOpenChange={setShowStopDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Stop Work Session?</AlertDialogTitle>
+            <AlertDialogTitle>{t.tracker.stop}</AlertDialogTitle>
             <AlertDialogDescription>
               This will stop the timer and submit work data for {session.userName}. You cannot undo this action.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-stop">Cancel</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-stop">{t.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmStop} data-testid="button-confirm-stop">
-              Stop & Submit
+              {t.tracker.submit}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -23,6 +23,7 @@ import { Pencil, Save, X, Calendar, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface WorkLog {
   id: string;
@@ -55,6 +56,7 @@ export default function WorkHistoryDialog({
   orderNumbers,
   performanceIds,
 }: WorkHistoryDialogProps) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
@@ -82,14 +84,14 @@ export default function WorkHistoryDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/work-logs/user", userId] });
       setEditingId(null);
       toast({
-        title: "Success",
-        description: "Work entry updated successfully",
+        title: t.save,
+        description: t.history.editEntry,
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update work entry",
+        title: t.history.errorLoading,
+        description: t.history.editEntry,
         variant: "destructive",
       });
     },
@@ -128,38 +130,38 @@ export default function WorkHistoryDialog({
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hours}h ${minutes}m ${secs}s`;
+    return `${hours}${t.time.hours} ${minutes}${t.time.minutes} ${secs}${t.time.seconds}`;
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Work History - {userName}</DialogTitle>
+          <DialogTitle className="text-2xl">{t.history.title} - {userName}</DialogTitle>
           <DialogDescription>
-            Last 10 submitted work entries (click edit to modify)
+            {t.history.lastEntries}
           </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="h-[60vh] pr-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="text-muted-foreground">Loading work history...</div>
+              <div className="text-muted-foreground">{t.loading}</div>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <div className="text-destructive">Failed to load work history</div>
+              <div className="text-destructive">{t.history.errorLoading}</div>
               <Button
                 variant="outline"
                 onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/work-logs/user", userId] })}
                 data-testid="button-retry-history"
               >
-                Retry
+                {t.history.retry}
               </Button>
             </div>
           ) : workLogs.length === 0 ? (
             <div className="flex items-center justify-center py-12">
-              <div className="text-muted-foreground">No work history found</div>
+              <div className="text-muted-foreground">{t.history.noEntries}</div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -186,7 +188,7 @@ export default function WorkHistoryDialog({
                       <div className="flex items-center gap-2">
                         {log.isModified && (
                           <Badge variant="secondary" data-testid={`badge-modified-${log.id}`}>
-                            Modified
+                            {t.history.modified}
                           </Badge>
                         )}
                         {!isEditing ? (
@@ -197,7 +199,7 @@ export default function WorkHistoryDialog({
                             data-testid={`button-edit-${log.id}`}
                           >
                             <Pencil className="w-4 h-4 mr-2" />
-                            Edit
+                            {t.edit}
                           </Button>
                         ) : (
                           <div className="flex gap-2">
@@ -208,7 +210,7 @@ export default function WorkHistoryDialog({
                               data-testid={`button-save-${log.id}`}
                             >
                               <Save className="w-4 h-4 mr-2" />
-                              Save
+                              {t.save}
                             </Button>
                             <Button
                               size="sm"
@@ -226,7 +228,7 @@ export default function WorkHistoryDialog({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="space-y-2">
-                        <Label>Part Number</Label>
+                        <Label>{t.tracker.partNumber}</Label>
                         {isEditing ? (
                           <div className="space-y-2">
                             <Select
@@ -236,7 +238,7 @@ export default function WorkHistoryDialog({
                               }
                             >
                               <SelectTrigger data-testid={`select-part-${log.id}`}>
-                                <SelectValue placeholder="Select or type..." />
+                                <SelectValue placeholder={t.tracker.selectPartNumber} />
                               </SelectTrigger>
                               <SelectContent>
                                 {partNumbers.map((part) => (
@@ -251,7 +253,7 @@ export default function WorkHistoryDialog({
                               onChange={(e) =>
                                 setEditForm({ ...editForm, partNumber: e.target.value })
                               }
-                              placeholder="Or type manually..."
+                              placeholder={t.tracker.typeToSearch}
                               data-testid={`input-part-${log.id}`}
                             />
                           </div>
@@ -263,7 +265,7 @@ export default function WorkHistoryDialog({
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Order Number</Label>
+                        <Label>{t.tracker.orderNumber}</Label>
                         {isEditing ? (
                           <div className="space-y-2">
                             <Select
@@ -273,7 +275,7 @@ export default function WorkHistoryDialog({
                               }
                             >
                               <SelectTrigger data-testid={`select-order-${log.id}`}>
-                                <SelectValue placeholder="Select or type..." />
+                                <SelectValue placeholder={t.tracker.selectOrderNumber} />
                               </SelectTrigger>
                               <SelectContent>
                                 {orderNumbers.map((order) => (
@@ -288,7 +290,7 @@ export default function WorkHistoryDialog({
                               onChange={(e) =>
                                 setEditForm({ ...editForm, orderNumber: e.target.value })
                               }
-                              placeholder="Or type manually..."
+                              placeholder={t.tracker.typeToSearch}
                               data-testid={`input-order-${log.id}`}
                             />
                           </div>
@@ -300,7 +302,7 @@ export default function WorkHistoryDialog({
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Performance ID</Label>
+                        <Label>{t.tracker.performanceId}</Label>
                         {isEditing ? (
                           <div className="space-y-2">
                             <Select
@@ -310,7 +312,7 @@ export default function WorkHistoryDialog({
                               }
                             >
                               <SelectTrigger data-testid={`select-perf-${log.id}`}>
-                                <SelectValue placeholder="Select or type..." />
+                                <SelectValue placeholder={t.tracker.selectPerformanceId} />
                               </SelectTrigger>
                               <SelectContent>
                                 {performanceIds.map((perf) => (
@@ -325,7 +327,7 @@ export default function WorkHistoryDialog({
                               onChange={(e) =>
                                 setEditForm({ ...editForm, performanceId: e.target.value })
                               }
-                              placeholder="Or type manually..."
+                              placeholder={t.tracker.typeToSearch}
                               data-testid={`input-perf-${log.id}`}
                             />
                           </div>
@@ -337,7 +339,7 @@ export default function WorkHistoryDialog({
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Duration (seconds)</Label>
+                        <Label>{t.history.duration}</Label>
                         {isEditing ? (
                           <Input
                             type="number"
@@ -346,7 +348,7 @@ export default function WorkHistoryDialog({
                             onChange={(e) =>
                               setEditForm({ ...editForm, duration: parseInt(e.target.value) || 0 })
                             }
-                            placeholder="Duration in seconds..."
+                            placeholder={t.history.duration}
                             data-testid={`input-duration-${log.id}`}
                           />
                         ) : (

@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import CompactSessionsSidebar from "@/components/CompactSessionsSidebar";
 import CompactWorkTracker from "@/components/CompactWorkTracker";
 import { useToast } from "@/hooks/use-toast";
+import { AppHeader } from "@/components/AppHeader";
 import {
   Dialog,
   DialogContent,
@@ -323,8 +324,10 @@ export default function WorkTrackerPage() {
         isAdmin={machine.isAdmin}
       />
 
-      {activeSession ? (
-        <CompactWorkTracker
+      <div className="flex flex-col flex-1">
+        <AppHeader />
+        {activeSession ? (
+          <CompactWorkTracker
           session={activeSession}
           department={machine.department}
           machineId={machine.machineId}
@@ -336,23 +339,24 @@ export default function WorkTrackerPage() {
           recentPerformanceIds={recentPerformance}
           onUpdateSession={handleUpdateSession}
           onStopSession={handleStopSession}
-        />
-      ) : (
-        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
-          <div className="text-center space-y-6">
-            <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-              <span className="text-5xl">👤</span>
-            </div>
-            <div>
-              <h2 className="text-3xl font-bold mb-2">No Active Session</h2>
-              <p className="text-xl text-muted-foreground">Click the + button in the sidebar to add a user</p>
+          />
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
+            <div className="text-center space-y-6">
+              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                <span className="text-5xl">👤</span>
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold mb-2">No Active Session</h2>
+                <p className="text-xl text-muted-foreground">Click the + button in the sidebar to add a user</p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+        <DialogContent className="max-w-6xl max-h-[80vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Add User to Session</DialogTitle>
             <DialogDescription>
@@ -360,7 +364,7 @@ export default function WorkTrackerPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-4">
             {availableUsersToAdd.length > 0 ? (
               availableUsersToAdd.map((user: any) => (
                 <UserSelectionCard
