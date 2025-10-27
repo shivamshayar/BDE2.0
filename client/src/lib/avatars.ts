@@ -1,24 +1,23 @@
-import avatar1 from '@assets/stock_images/diverse_people_avata_a8080110.jpg';
-import avatar2 from '@assets/stock_images/diverse_people_avata_1fb5b3e0.jpg';
-import avatar3 from '@assets/stock_images/diverse_people_avata_132c5067.jpg';
-import avatar4 from '@assets/stock_images/diverse_people_avata_735d51df.jpg';
-import avatar5 from '@assets/stock_images/diverse_people_avata_3665acb4.jpg';
-import avatar6 from '@assets/stock_images/diverse_people_avata_3daf895f.jpg';
-import avatar7 from '@assets/stock_images/diverse_people_avata_9e1b36f0.jpg';
-import avatar8 from '@assets/stock_images/diverse_people_avata_2416504e.jpg';
-import avatar9 from '@assets/stock_images/diverse_people_avata_08c76fc3.jpg';
-import avatar10 from '@assets/stock_images/diverse_people_avata_66b02f6b.jpg';
-import avatar11 from '@assets/stock_images/professional_busines_e64d0821.jpg';
-import avatar12 from '@assets/stock_images/professional_busines_664ec85c.jpg';
-import avatar13 from '@assets/stock_images/professional_busines_3735f2cc.jpg';
-import avatar14 from '@assets/stock_images/professional_busines_e2f6e2c3.jpg';
-import avatar15 from '@assets/stock_images/professional_busines_4f627c83.jpg';
-import avatar16 from '@assets/stock_images/professional_busines_df9f4906.jpg';
-import avatar17 from '@assets/stock_images/professional_busines_7157dfc1.jpg';
-import avatar18 from '@assets/stock_images/professional_busines_313f44a8.jpg';
-import avatar19 from '@assets/stock_images/professional_busines_63438018.jpg';
-import avatar20 from '@assets/stock_images/professional_busines_8b447d35.jpg';
-
+import avatar1 from '@assets/stock_images/bear.png';
+import avatar2 from '@assets/stock_images/cat.png';
+import avatar3 from '@assets/stock_images/dog.png';
+import avatar4 from '@assets/stock_images/icebear.png';
+import avatar5 from '@assets/stock_images/koala.jpg';
+import avatar6 from '@assets/stock_images/lobster.png';
+import avatar7 from '@assets/stock_images/ninjaturtle1.png';
+import avatar8 from '@assets/stock_images/ninjaturtle2.png';
+import avatar9 from '@assets/stock_images/penguin.png';
+import avatar10 from '@assets/stock_images/pig.png';
+import avatar11 from '@assets/stock_images/squirrel.png';
+import avatar12 from '@assets/stock_images/bear.png';
+import avatar13 from '@assets/stock_images/cat.png';
+import avatar14 from '@assets/stock_images/dog.png';
+import avatar15 from '@assets/stock_images/icebear.png';
+import avatar16 from '@assets/stock_images/koala.jpg';
+import avatar17 from '@assets/stock_images/lobster.png';
+import avatar18 from '@assets/stock_images/ninjaturtle1.png';
+import avatar19 from '@assets/stock_images/ninjaturtle2.png';
+import avatar20 from '@assets/stock_images/penguin.png';
 export const AVATAR_IMAGES = [
   avatar1,
   avatar2,
