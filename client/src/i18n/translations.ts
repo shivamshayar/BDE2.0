@@ -84,6 +84,14 @@ export const translations = {
       selectImage: 'Select image',
       active: 'Active',
       inactive: 'Inactive',
+      confirmDelete: 'Confirm Delete',
+      deleteConfirmMessage: 'Are you sure you want to delete',
+      deleteWarning: ' This action cannot be undone.',
+      deleting: 'Deleting...',
+      deleteSuccess: 'Deleted successfully',
+      deleteSuccessDescription: 'has been deleted',
+      deleteError: 'Error',
+      deleteErrorDescription: 'Failed to delete item',
     },
     
     // Time formats
@@ -179,6 +187,14 @@ export const translations = {
       selectImage: 'Bild auswählen',
       active: 'Aktiv',
       inactive: 'Inaktiv',
+      confirmDelete: 'Löschen bestätigen',
+      deleteConfirmMessage: 'Möchten Sie wirklich löschen',
+      deleteWarning: ' Diese Aktion kann nicht rückgängig gemacht werden.',
+      deleting: 'Löschen...',
+      deleteSuccess: 'Erfolgreich gelöscht',
+      deleteSuccessDescription: 'wurde gelöscht',
+      deleteError: 'Fehler',
+      deleteErrorDescription: 'Löschen fehlgeschlagen',
     },
     
     // Time formats

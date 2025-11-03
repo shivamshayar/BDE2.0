@@ -31,12 +31,14 @@ export interface IStorage {
   createBdeMachine(machine: InsertBdeMachine): Promise<BdeMachine>;
   updateBdeMachine(id: string, updates: Partial<BdeMachine>): Promise<BdeMachine | undefined>;
   getAllBdeMachines(): Promise<BdeMachine[]>;
+  deleteBdeMachine(id: string): Promise<void>;
 
   // Factory Users
   getFactoryUser(id: string): Promise<FactoryUser | undefined>;
   getAllFactoryUsers(): Promise<FactoryUser[]>;
   createFactoryUser(user: InsertFactoryUser): Promise<FactoryUser>;
   updateFactoryUser(id: string, updates: Partial<FactoryUser>): Promise<FactoryUser | undefined>;
+  deleteFactoryUser(id: string): Promise<void>;
 
   // Work Sessions
   getWorkSession(id: string): Promise<WorkSession | undefined>;
@@ -57,10 +59,13 @@ export interface IStorage {
   // Master Data
   getAllPartNumbers(): Promise<PartNumber[]>;
   createPartNumber(partNumber: InsertPartNumber): Promise<PartNumber>;
+  deletePartNumber(id: string): Promise<void>;
   getAllOrderNumbers(): Promise<OrderNumber[]>;
   createOrderNumber(orderNumber: InsertOrderNumber): Promise<OrderNumber>;
+  deleteOrderNumber(id: string): Promise<void>;
   getAllPerformanceIds(): Promise<PerformanceId[]>;
   createPerformanceId(performanceId: InsertPerformanceId): Promise<PerformanceId>;
+  deletePerformanceId(id: string): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -219,6 +224,26 @@ export class DbStorage implements IStorage {
   async createPerformanceId(performanceId: InsertPerformanceId): Promise<PerformanceId> {
     const result = await db.insert(performanceIds).values(performanceId).returning();
     return result[0];
+  }
+
+  async deleteBdeMachine(id: string): Promise<void> {
+    await db.delete(bdeMachines).where(eq(bdeMachines.id, id));
+  }
+
+  async deleteFactoryUser(id: string): Promise<void> {
+    await db.delete(factoryUsers).where(eq(factoryUsers.id, id));
+  }
+
+  async deletePartNumber(id: string): Promise<void> {
+    await db.delete(partNumbers).where(eq(partNumbers.id, id));
+  }
+
+  async deleteOrderNumber(id: string): Promise<void> {
+    await db.delete(orderNumbers).where(eq(orderNumbers.id, id));
+  }
+
+  async deletePerformanceId(id: string): Promise<void> {
+    await db.delete(performanceIds).where(eq(performanceIds.id, id));
   }
 }
 

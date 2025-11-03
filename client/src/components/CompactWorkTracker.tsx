@@ -30,13 +30,18 @@ interface UserSession {
   performanceId: string;
 }
 
+interface PerformanceIdItem {
+  performanceId: string;
+  performanceName: string;
+}
+
 interface CompactWorkTrackerProps {
   session: UserSession;
   department?: string;
   machineId?: string;
   partNumbers: string[];
   orderNumbers: string[];
-  performanceIds: string[];
+  performanceIds: PerformanceIdItem[];
   recentPartNumbers?: string[];
   recentOrderNumbers?: string[];
   recentPerformanceIds?: string[];
@@ -68,6 +73,8 @@ export default function CompactWorkTracker({
   const [localDuration, setLocalDuration] = useState(session.duration);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerType, setDrawerType] = useState<"part" | "order" | "performance">("part");
+  const [showOvertimeNotification, setShowOvertimeNotification] = useState(false);
+  const [overtimeAcknowledged, setOvertimeAcknowledged] = useState(false);
   
   const partLastKeyTimeRef = useRef<number>(0);
   const partIsScanningRef = useRef<boolean>(false);
@@ -85,10 +92,24 @@ export default function CompactWorkTracker({
   const perfInputRef = useRef<HTMLInputElement>(null);
   
   const startButtonRef = useRef<HTMLButtonElement>(null);
+  
+  // Flag to prevent onChange from firing after combined QR code parsing
+  const combinedQRParsedRef = useRef<boolean>(false);
 
   useEffect(() => {
     setLocalDuration(session.duration);
   }, [session.duration]);
+
+  // Auto-focus Part Number field when component mounts or when timer is not running
+  useEffect(() => {
+    if (!session.isRunning && partInputRef.current) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        partInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [session.isRunning]);
 
   const initials = session.userName
     .split(" ")
@@ -96,6 +117,12 @@ export default function CompactWorkTracker({
     .join("")
     .toUpperCase()
     .slice(0, 2);
+
+  // Helper to get performance name from ID
+  const getPerformanceName = (performanceId: string): string => {
+    const perfItem = performanceIds.find(p => p.performanceId === performanceId);
+    return perfItem ? perfItem.performanceName : performanceId;
+  };
 
   const handleStart = () => {
     if (session.partNumber && session.orderNumber && session.performanceId) {
@@ -127,24 +154,22 @@ export default function CompactWorkTracker({
     setShowStopDialog(false);
   };
 
-  const handleDurationChange = (newDuration: number) => {
-    setLocalDuration(newDuration);
-    onUpdateSession?.(session.id, { duration: newDuration });
-  };
 
+  // Check for overtime (> 1 hour) and show notification
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    
-    if (session.isRunning) {
-      interval = setInterval(() => {
-        handleDurationChange(localDuration + 1);
-      }, 1000);
+    const ONE_HOUR = 3600;
+    if (session.isRunning && localDuration > ONE_HOUR && !overtimeAcknowledged && !showOvertimeNotification) {
+      setShowOvertimeNotification(true);
     }
+  }, [session.isRunning, localDuration, overtimeAcknowledged, showOvertimeNotification]);
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [session.isRunning, localDuration]);
+  // Reset acknowledgment when timer stops
+  useEffect(() => {
+    if (!session.isRunning) {
+      setOvertimeAcknowledged(false);
+      setShowOvertimeNotification(false);
+    }
+  }, [session.isRunning]);
 
   const hours = Math.floor(localDuration / 3600);
   const minutes = Math.floor((localDuration % 3600) / 60);
@@ -165,7 +190,11 @@ export default function CompactWorkTracker({
     } else if (drawerType === "order") {
       onUpdateSession?.(session.id, { orderNumber: value });
     } else {
-      onUpdateSession?.(session.id, { performanceId: value });
+      // For performance IDs, value is the performance name, need to find the ID
+      const perfItem = performanceIds.find(p => p.performanceName === value);
+      if (perfItem) {
+        onUpdateSession?.(session.id, { performanceId: perfItem.performanceId });
+      }
     }
     setDrawerOpen(false);
   };
@@ -185,9 +214,45 @@ export default function CompactWorkTracker({
     return text.split('').map(char => charMap[char] || char).join('');
   };
 
+  // Detect and parse combined QR code formats (order & part number)
+  const parseCombinedQRCode = (text: string): { orderNumber: string; partNumber: string } | null => {
+    // Version 1: ^\d{1,5}/\d{1,4}$ - e.g., "12345/123"
+    const format1 = /^\d{1,5}\/\d{1,4}$/;
+    if (format1.test(text)) {
+      const [orderNumber, partNumber] = text.split('/');
+      return { orderNumber, partNumber };
+    }
+    
+    // Version 2: ^\d{1,5}-\d{1,3}/\d{1,4}$ - e.g., "12345-123/1234"
+    const format2 = /^\d{1,5}-\d{1,3}\/\d{1,4}$/;
+    if (format2.test(text)) {
+      const parts = text.split('/');
+      const orderNumber = parts[0]; // "12345-123"
+      const partNumber = parts[1];  // "1234"
+      return { orderNumber, partNumber };
+    }
+    
+    // Version 3: ^\d{1,4}-\d{5}$ - e.g., "1234-12345"
+    const format3 = /^\d{1,4}-\d{5}$/;
+    if (format3.test(text)) {
+      const parts = text.split('-');
+      const orderNumber = parts[0]; // "1234"
+      const partNumber = parts[1];  // "12345"
+      return { orderNumber, partNumber };
+    }
+    
+    return null;
+  };
+
   const handlePartNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     const normalized = normalizeGermanChars(newValue);
+    
+    // Skip processing if we just parsed a combined QR code
+    if (combinedQRParsedRef.current) {
+      combinedQRParsedRef.current = false;
+      return;
+    }
     
     const now = Date.now();
     const timeDiff = now - partLastKeyTimeRef.current;
@@ -199,6 +264,24 @@ export default function CompactWorkTracker({
     
     const wasScanning = partIsScanningRef.current;
     const isRapidTyping = timeDiff > 0 && timeDiff < 50;
+    
+    // Check if this is a combined QR code (order & part number)
+    if (isRapidTyping && normalized) {
+      const combined = parseCombinedQRCode(normalized);
+      if (combined) {
+        combinedQRParsedRef.current = true;
+        onUpdateSession?.(session.id, { 
+          orderNumber: combined.orderNumber, 
+          partNumber: combined.partNumber 
+        });
+        partIsScanningRef.current = false;
+        partScanTimeoutRef.current = setTimeout(() => {
+          combinedQRParsedRef.current = false;
+          perfInputRef.current?.focus();
+        }, 150);
+        return;
+      }
+    }
     
     if (isRapidTyping && wasScanning) {
       onUpdateSession?.(session.id, { partNumber: normalized });
@@ -222,6 +305,12 @@ export default function CompactWorkTracker({
     const newValue = e.target.value;
     const normalized = normalizeGermanChars(newValue);
     
+    // Skip processing if we just parsed a combined QR code
+    if (combinedQRParsedRef.current) {
+      combinedQRParsedRef.current = false;
+      return;
+    }
+    
     const now = Date.now();
     const timeDiff = now - orderLastKeyTimeRef.current;
     orderLastKeyTimeRef.current = now;
@@ -232,6 +321,34 @@ export default function CompactWorkTracker({
     
     const wasScanning = orderIsScanningRef.current;
     const isRapidTyping = timeDiff > 0 && timeDiff < 50;
+    
+    // Check if this is a combined QR code (order & part number)
+    if (isRapidTyping && normalized) {
+      const combined = parseCombinedQRCode(normalized);
+      if (combined) {
+        combinedQRParsedRef.current = true;
+        onUpdateSession?.(session.id, { 
+          orderNumber: combined.orderNumber, 
+          partNumber: combined.partNumber 
+        });
+        orderIsScanningRef.current = false;
+        orderScanTimeoutRef.current = setTimeout(() => {
+          combinedQRParsedRef.current = false;
+          perfInputRef.current?.focus();
+        }, 150);
+        return;
+      }
+    }
+    
+    // If part number is empty and this is a scan, auto-fill part number instead
+    if (!session.partNumber && isRapidTyping && normalized) {
+      onUpdateSession?.(session.id, { partNumber: normalized, orderNumber: '' });
+      orderIsScanningRef.current = false;
+      orderScanTimeoutRef.current = setTimeout(() => {
+        partInputRef.current?.focus();
+      }, 100);
+      return;
+    }
     
     if (isRapidTyping && wasScanning) {
       onUpdateSession?.(session.id, { orderNumber: normalized });
@@ -255,6 +372,12 @@ export default function CompactWorkTracker({
     const newValue = e.target.value;
     const normalized = normalizeGermanChars(newValue);
     
+    // Skip processing if we just parsed a combined QR code
+    if (combinedQRParsedRef.current) {
+      combinedQRParsedRef.current = false;
+      return;
+    }
+    
     const now = Date.now();
     const timeDiff = now - perfLastKeyTimeRef.current;
     perfLastKeyTimeRef.current = now;
@@ -265,6 +388,34 @@ export default function CompactWorkTracker({
     
     const wasScanning = perfIsScanningRef.current;
     const isRapidTyping = timeDiff > 0 && timeDiff < 50;
+    
+    // Check if this is a combined QR code (order & part number)
+    if (isRapidTyping && normalized) {
+      const combined = parseCombinedQRCode(normalized);
+      if (combined) {
+        combinedQRParsedRef.current = true;
+        onUpdateSession?.(session.id, { 
+          orderNumber: combined.orderNumber, 
+          partNumber: combined.partNumber 
+        });
+        perfIsScanningRef.current = false;
+        perfScanTimeoutRef.current = setTimeout(() => {
+          combinedQRParsedRef.current = false;
+          perfInputRef.current?.focus();
+        }, 150);
+        return;
+      }
+    }
+    
+    // If part number is empty and this is a scan, auto-fill part number instead
+    if (!session.partNumber && isRapidTyping && normalized) {
+      onUpdateSession?.(session.id, { partNumber: normalized, performanceId: '' });
+      perfIsScanningRef.current = false;
+      perfScanTimeoutRef.current = setTimeout(() => {
+        partInputRef.current?.focus();
+      }, 100);
+      return;
+    }
     
     if (isRapidTyping && wasScanning) {
       onUpdateSession?.(session.id, { performanceId: normalized });
@@ -297,9 +448,9 @@ export default function CompactWorkTracker({
   };
 
   return (
-    <div className="flex-1 bg-gradient-to-br from-background via-background to-primary/5 flex flex-col">
+    <div className="flex-1 bg-gradient-to-br from-background via-background to-primary/5 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="glass-effect border-b px-8 py-4">
+      <header className="glass-effect border-b px-8 py-4 shrink-0">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">
             Department : <span className="gradient-text">{department}</span>
@@ -321,22 +472,28 @@ export default function CompactWorkTracker({
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto p-8">
-        <div className="max-w-4xl mx-auto space-y-8">
+      <div className="flex-1 overflow-auto p-3 sm:p-6 md:p-8">
+        <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 md:space-y-8">
           {/* User Info & Fields */}
-          <div className="grid md:grid-cols-2 gap-8 items-center">
+          <div className="grid md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 items-center">
             {/* User Avatar */}
             <div className="flex justify-center">
               <div className="relative">
-                <Avatar className="w-48 h-48 border-8 border-background shadow-2xl ring-4 ring-primary/30">
+                <Avatar className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 border-4 sm:border-6 md:border-8 border-background shadow-2xl ring-2 sm:ring-3 md:ring-4 ring-primary/30">
                   <AvatarImage src={session.userImage} alt={session.userName} />
-                  <AvatarFallback className="text-5xl bg-gradient-to-br from-primary/20 to-accent/20">
+                  <AvatarFallback className="text-3xl sm:text-4xl md:text-5xl bg-gradient-to-br from-primary/20 to-accent/20">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 {session.isRunning && (
-                  <div className="absolute -bottom-3 -right-3 w-16 h-16 bg-green-500 rounded-full flex items-center justify-center border-4 border-background shadow-lg animate-pulse">
-                    <span className="text-white text-2xl">●</span>
+                  <div className="absolute -bottom-2 -right-2 sm:-bottom-3 sm:-right-3 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-green-500 rounded-full flex items-center justify-center border-3 sm:border-4 border-background shadow-lg animate-pulse">
+                    <span className="text-white text-lg sm:text-xl md:text-2xl">●</span>
+                  </div>
+                )}
+                {/* Red warning dot for overtime (> 1 hour) */}
+                {session.isRunning && localDuration > 3600 && !overtimeAcknowledged && (
+                  <div className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-red-500 rounded-full flex items-center justify-center border-3 sm:border-4 border-background shadow-lg animate-pulse">
+                    <span className="text-white text-lg sm:text-xl md:text-2xl">!</span>
                   </div>
                 )}
               </div>
@@ -401,7 +558,7 @@ export default function CompactWorkTracker({
                 <div className="flex gap-2">
                   <Input
                     ref={perfInputRef}
-                    value={session.performanceId}
+                    value={getPerformanceName(session.performanceId)}
                     onChange={handlePerformanceIdChange}
                     onFocus={handlePerformanceIdFocus}
                     disabled={session.isRunning}
@@ -427,13 +584,13 @@ export default function CompactWorkTracker({
           {/* Timer */}
           <div className="flex justify-center">
             <div
-              className={`inline-flex items-center gap-4 px-8 py-6 rounded-2xl transition-all ${
+              className={`inline-flex items-center gap-2 sm:gap-3 md:gap-4 px-4 py-3 sm:px-6 sm:py-4 md:px-8 md:py-6 rounded-2xl transition-all ${
                 session.isRunning
                   ? "bg-primary text-primary-foreground shadow-2xl shadow-primary/30"
                   : "bg-muted/50"
               }`}
             >
-              <div className="font-mono text-5xl font-bold tracking-tight" data-testid="text-timer">
+              <div className="font-mono text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight" data-testid="text-timer">
                 {formatTime(hours)}:{formatTime(minutes)}:{formatTime(secs)}
               </div>
               {!session.isRunning ? (
@@ -442,20 +599,20 @@ export default function CompactWorkTracker({
                   size="icon"
                   onClick={handleStart}
                   disabled={!canStart}
-                  className="w-16 h-16 rounded-full bg-green-600 hover:bg-green-700 shadow-xl"
+                  className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-green-600 hover:bg-green-700 shadow-xl"
                   data-testid="button-start"
                 >
-                  <Play className="w-8 h-8" />
+                  <Play className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" />
                 </Button>
               ) : (
                 <Button
                   size="icon"
                   variant="destructive"
                   onClick={handleStop}
-                  className="w-16 h-16 rounded-full shadow-xl"
+                  className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full shadow-xl"
                   data-testid="button-stop"
                 >
-                  <Square className="w-8 h-8" />
+                  <Square className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" />
                 </Button>
               )}
             </div>
@@ -463,21 +620,21 @@ export default function CompactWorkTracker({
 
           {/* Recent Items */}
           {!session.isRunning && (
-            <div className="space-y-6">
+            <div className="space-y-3 sm:space-y-4 md:space-y-6">
               {/* Recent Part Numbers */}
               {recentPartNumbers.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t.tracker.partNumber}</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-2 sm:space-y-3">
+                  <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t.tracker.partNumber}</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                     {recentPartNumbers.map((part) => (
                       <Button
                         key={part}
                         variant="outline"
-                        className="h-12 text-base font-bold border-2 hover:border-primary"
+                        className="h-10 sm:h-11 md:h-12 text-sm sm:text-base font-bold border-2 hover:border-primary overflow-hidden"
                         onClick={() => onUpdateSession?.(session.id, { partNumber: part })}
                         data-testid={`button-recent-part-${part}`}
                       >
-                        {part}
+                        <span className="truncate w-full">{part}</span>
                       </Button>
                     ))}
                   </div>
@@ -486,18 +643,18 @@ export default function CompactWorkTracker({
 
               {/* Recent Order Numbers */}
               {recentOrderNumbers.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t.tracker.orderNumber}</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-2 sm:space-y-3">
+                  <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t.tracker.orderNumber}</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                     {recentOrderNumbers.map((order) => (
                       <Button
                         key={order}
                         variant="outline"
-                        className="h-12 text-base font-bold border-2 hover:border-primary"
+                        className="h-10 sm:h-11 md:h-12 text-sm sm:text-base font-bold border-2 hover:border-primary overflow-hidden"
                         onClick={() => onUpdateSession?.(session.id, { orderNumber: order })}
                         data-testid={`button-recent-order-${order}`}
                       >
-                        {order}
+                        <span className="truncate w-full">{order}</span>
                       </Button>
                     ))}
                   </div>
@@ -506,20 +663,23 @@ export default function CompactWorkTracker({
 
               {/* Recent Performance IDs */}
               {recentPerformanceIds.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t.tracker.performanceId}</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {recentPerformanceIds.map((perf) => (
-                      <Button
-                        key={perf}
-                        variant="outline"
-                        className="h-12 text-base font-bold border-2 hover:border-primary"
-                        onClick={() => onUpdateSession?.(session.id, { performanceId: perf })}
-                        data-testid={`button-recent-perf-${perf}`}
-                      >
-                        {perf}
-                      </Button>
-                    ))}
+                <div className="space-y-2 sm:space-y-3">
+                  <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t.tracker.performanceId}</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
+                    {recentPerformanceIds.map((perfId) => {
+                      const perfName = getPerformanceName(perfId);
+                      return (
+                        <Button
+                          key={perfId}
+                          variant="outline"
+                          className="h-10 sm:h-11 md:h-12 text-sm sm:text-base font-bold border-2 hover:border-primary overflow-hidden"
+                          onClick={() => onUpdateSession?.(session.id, { performanceId: perfId })}
+                          data-testid={`button-recent-perf-${perfId}`}
+                        >
+                          <span className="truncate w-full">{perfName}</span>
+                        </Button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -544,7 +704,7 @@ export default function CompactWorkTracker({
             ? partNumbers
             : drawerType === "order"
             ? orderNumbers
-            : performanceIds
+            : performanceIds.map(p => p.performanceName)
         }
         onSelect={handleSelectValue}
       />
@@ -562,6 +722,49 @@ export default function CompactWorkTracker({
             <AlertDialogCancel data-testid="button-cancel-stop">{t.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmStop} data-testid="button-confirm-stop">
               {t.tracker.submit}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Overtime Warning Dialog */}
+      <AlertDialog open={showOvertimeNotification} onOpenChange={setShowOvertimeNotification}>
+        <AlertDialogContent className="border-red-500 border-2">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-500 flex items-center gap-2">
+              <span className="text-3xl">⚠️</span>
+              Timer Over 1 Hour!
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-lg">
+              <strong>{session.userName}</strong>'s timer has been running for over 1 hour.
+              <br />
+              <br />
+              Current time: <strong>{formatTime(hours)}:{formatTime(minutes)}:{formatTime(secs)}</strong>
+              <br />
+              <br />
+              Did you forget to stop the timer?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction 
+              onClick={() => {
+                setOvertimeAcknowledged(true);
+                setShowOvertimeNotification(false);
+              }} 
+              data-testid="button-acknowledge-overtime"
+              className="bg-red-500 hover:bg-red-600"
+            >
+              I'll Continue Working
+            </AlertDialogAction>
+            <AlertDialogAction 
+              onClick={() => {
+                setOvertimeAcknowledged(true);
+                setShowOvertimeNotification(false);
+                handleStop();
+              }} 
+              data-testid="button-stop-overtime"
+            >
+              Stop Timer Now
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

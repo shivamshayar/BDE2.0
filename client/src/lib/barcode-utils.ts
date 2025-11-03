@@ -25,6 +25,24 @@ export async function generateBarcodeDataURL(text: string): Promise<string> {
   }
 }
 
+export async function generateQRCodeDataURL(text: string): Promise<string> {
+  try {
+    const canvas = document.createElement('canvas');
+    bwipjs.toCanvas(canvas, {
+      bcid: 'qrcode',
+      text: text,
+      scale: 3,
+      width: 30,
+      height: 30,
+      includetext: false,
+    });
+    return canvas.toDataURL('image/png');
+  } catch (error) {
+    console.error('QR code generation error:', error);
+    throw error;
+  }
+}
+
 export async function downloadBarcodesAsPDF(
   items: BarcodeItem[],
   title: string
@@ -37,7 +55,7 @@ export async function downloadBarcodesAsPDF(
   const itemsPerRow = 3;
   const itemsPerPage = 9;
   const cardWidth = (pageWidth - (margin * 4)) / itemsPerRow;
-  const cardHeight = 70;
+  const cardHeight = 85;
   const spacing = 5;
   
   let currentPage = 0;
@@ -78,6 +96,7 @@ export async function downloadBarcodesAsPDF(
     
     try {
       const barcodeDataURL = await generateBarcodeDataURL(item.value);
+      const qrCodeDataURL = await generateQRCodeDataURL(item.value);
       
       pdf.setDrawColor(200, 200, 200);
       pdf.setLineWidth(0.3);
@@ -102,12 +121,32 @@ export async function downloadBarcodesAsPDF(
         pdf.text(item.description, descX, y + 14);
       }
       
-      const barcodeY = item.description ? y + 18 : y + 12;
+      const contentY = item.description ? y + 18 : y + 12;
       const barcodeWidth = cardWidth - 8;
-      const barcodeHeight = 35;
+      const barcodeHeight = 30;
       const barcodeX = x + 4;
       
-      pdf.addImage(barcodeDataURL, 'PNG', barcodeX, barcodeY, barcodeWidth, barcodeHeight);
+      pdf.addImage(barcodeDataURL, 'PNG', barcodeX, contentY, barcodeWidth, barcodeHeight);
+      
+      pdf.setFontSize(6);
+      pdf.setFont('helvetica', 'italic');
+      pdf.setTextColor(100, 116, 139);
+      const barcodeLabel = 'Barcode';
+      const barcodeLabelWidth = pdf.getTextWidth(barcodeLabel);
+      pdf.text(barcodeLabel, x + (cardWidth / 2) - (barcodeLabelWidth / 2), contentY + barcodeHeight + 3);
+      
+      const qrY = contentY + barcodeHeight + 7;
+      const qrSize = 20;
+      const qrX = x + (cardWidth / 2) - (qrSize / 2);
+      
+      pdf.addImage(qrCodeDataURL, 'PNG', qrX, qrY, qrSize, qrSize);
+      
+      pdf.setFontSize(6);
+      pdf.setFont('helvetica', 'italic');
+      pdf.setTextColor(100, 116, 139);
+      const qrLabel = 'QR Code';
+      const qrLabelWidth = pdf.getTextWidth(qrLabel);
+      pdf.text(qrLabel, x + (cardWidth / 2) - (qrLabelWidth / 2), qrY + qrSize + 3);
       
       pdf.setFontSize(6);
       pdf.setFont('helvetica', 'normal');
@@ -118,7 +157,7 @@ export async function downloadBarcodesAsPDF(
       pdf.text(dateText, dateX, y + cardHeight - 3);
       
     } catch (error) {
-      console.error(`Error generating barcode for ${item.value}:`, error);
+      console.error(`Error generating codes for ${item.value}:`, error);
     }
   }
   

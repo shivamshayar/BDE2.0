@@ -121,15 +121,14 @@ export type OrderNumber = typeof orderNumbers.$inferSelect;
 
 // Performance IDs (master data)
 export const performanceIds = pgTable("performance_ids", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  performanceId: text("performance_id").notNull().unique(),
+  performanceId: text("performance_id").primaryKey(),
+  performanceName: text("performance_name").notNull(),
   description: text("description"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertPerformanceIdSchema = createInsertSchema(performanceIds).omit({
-  id: true,
   createdAt: true,
 });
 

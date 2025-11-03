@@ -8,25 +8,40 @@ interface BarcodeDisplayProps {
 }
 
 export function BarcodeDisplay({ text, className = "" }: BarcodeDisplayProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const barcodeCanvasRef = useRef<HTMLCanvasElement>(null);
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!canvasRef.current || !text) return;
+    if (!text) return;
 
     try {
       setError(null);
-      bwipjs.toCanvas(canvasRef.current, {
-        bcid: 'code128',
-        text: text,
-        scale: 2,
-        height: 8,
-        includetext: true,
-        textxalign: 'center',
-      });
+      
+      if (barcodeCanvasRef.current) {
+        bwipjs.toCanvas(barcodeCanvasRef.current, {
+          bcid: 'code128',
+          text: text,
+          scale: 2,
+          height: 8,
+          includetext: true,
+          textxalign: 'center',
+        });
+      }
+
+      if (qrCanvasRef.current) {
+        bwipjs.toCanvas(qrCanvasRef.current, {
+          bcid: 'qrcode',
+          text: text,
+          scale: 2,
+          width: 20,
+          height: 20,
+          includetext: false,
+        });
+      }
     } catch (err) {
-      console.error('Barcode generation error:', err);
-      setError('Failed to generate barcode');
+      console.error('Code generation error:', err);
+      setError('Failed to generate codes');
     }
   }, [text]);
 
@@ -39,8 +54,15 @@ export function BarcodeDisplay({ text, className = "" }: BarcodeDisplayProps) {
   }
 
   return (
-    <div className={className}>
-      <canvas ref={canvasRef} />
+    <div className={`flex items-center gap-4 ${className}`}>
+      <div className="flex flex-col items-center gap-1">
+        <canvas ref={barcodeCanvasRef} />
+        <span className="text-xs text-muted-foreground">Barcode</span>
+      </div>
+      <div className="flex flex-col items-center gap-1">
+        <canvas ref={qrCanvasRef} />
+        <span className="text-xs text-muted-foreground">QR Code</span>
+      </div>
     </div>
   );
 }

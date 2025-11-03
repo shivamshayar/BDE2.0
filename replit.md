@@ -3,7 +3,11 @@
 ## Project Overview
 A comprehensive Business Data Entry (BDE) system for tracking factory worker performance on production machines. Features machine-based authentication, multi-user session management, timer-based work tracking, and admin dashboard for managing master data.
 
-## Recent Changes (October 23, 2025)
+## Recent Changes (October 28, 2025)
+- ✅ **Combined QR code support** - Scan QR codes containing both order and part numbers in one code
+  - Supports 3 format variations: `\d{1,5}/\d{1,4}`, `\d{1,5}-\d{1,3}/\d{1,4}`, `\d{1,4}-\d{5}`
+  - Automatically parses and fills both order and part number fields
+  - Focus moves to Performance ID field after parsing
 - ✅ **Admin status display** - BDE Machines table now shows Admin/User badges
 - ✅ **Admin checkbox** - Add machine form includes checkbox to designate administrator status
 - ✅ **Default admin seeding** - Automatically creates admin user (BDE-1) on first database initialization
@@ -112,6 +116,13 @@ Located in `shared/schema.ts`:
   - German keyboard normalization (ß → -, etc.) for international compatibility
   - Works with Part Number, Order Number, and Performance ID fields
   - No special configuration needed - plug and play!
+- **Combined QR Code Support**: Scan QR codes containing both order and part numbers
+  - Format 1: `12345/123` - order/part separated by slash
+  - Format 2: `12345-123/1234` - complex order format with slash separator
+  - Format 3: `1234-12345` - order-part separated by dash
+  - Automatically detects format and fills both fields
+  - Focus automatically moves to Performance ID field after parsing
+- **Auto-Focus on Part Number**: Part Number field automatically focused on page load for immediate scanning
 
 ### Design System
 

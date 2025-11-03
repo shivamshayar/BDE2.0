@@ -144,6 +144,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/admin/machines/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteBdeMachine(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete machine error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Factory Users
   app.get("/api/users", async (req: Request, res: Response) => {
     try {
@@ -166,6 +177,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(user);
     } catch (error) {
       console.error("Create user error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/users/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteFactoryUser(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete user error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -360,6 +382,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/master/parts/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await storage.deletePartNumber(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete part error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Master Data - Order Numbers
   app.get("/api/master/orders", async (req: Request, res: Response) => {
     try {
@@ -389,6 +422,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/master/orders/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteOrderNumber(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete order error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Master Data - Performance IDs
   app.get("/api/master/performance", async (req: Request, res: Response) => {
     try {
@@ -414,6 +458,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error.code === "23505") {
         return res.status(409).json({ error: "Performance ID already exists" });
       }
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/master/performance/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await storage.deletePerformanceId(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete performance error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

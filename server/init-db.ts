@@ -82,10 +82,13 @@ export async function initializeDatabase() {
       );
     `);
 
+    // Drop and recreate performance_ids table with new schema
+    await db.execute(sql`DROP TABLE IF EXISTS performance_ids CASCADE;`);
+    
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS performance_ids (
-        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-        performance_id TEXT NOT NULL UNIQUE,
+      CREATE TABLE performance_ids (
+        performance_id TEXT PRIMARY KEY,
+        performance_name TEXT NOT NULL,
         description TEXT,
         is_active BOOLEAN NOT NULL DEFAULT true,
         created_at TIMESTAMP NOT NULL DEFAULT NOW()

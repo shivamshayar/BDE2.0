@@ -154,6 +154,92 @@ export default function AdminPage() {
     },
   });
 
+  // Delete mutations
+  const deleteMachineMutation = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        const response = await apiRequest("DELETE", `/api/admin/machines/${id}`);
+        return await response.json();
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/machines"] });
+    },
+    onError: (error: any) => {
+      throw error;
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        const response = await apiRequest("DELETE", `/api/users/${id}`);
+        return await response.json();
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: (error: any) => {
+      throw error;
+    },
+  });
+
+  const deletePartNumberMutation = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        const response = await apiRequest("DELETE", `/api/master/parts/${id}`);
+        return await response.json();
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/master/parts"] });
+    },
+    onError: (error: any) => {
+      throw error;
+    },
+  });
+
+  const deleteOrderNumberMutation = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        const response = await apiRequest("DELETE", `/api/master/orders/${id}`);
+        return await response.json();
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/master/orders"] });
+    },
+    onError: (error: any) => {
+      throw error;
+    },
+  });
+
+  const deletePerformanceIdMutation = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        const response = await apiRequest("DELETE", `/api/master/performance/${id}`);
+        return await response.json();
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/master/performance"] });
+    },
+    onError: (error: any) => {
+      throw error;
+    },
+  });
+
   const handleAddUser = async (name: string, imageUrl: string | null) => {
     await createUserMutation.mutateAsync({ name, imageUrl, isActive: true });
   };
@@ -170,12 +256,32 @@ export default function AdminPage() {
     await createOrderNumberMutation.mutateAsync({ orderNumber, isActive: true });
   };
 
-  const handleAddPerformanceId = async (performanceId: string) => {
-    await createPerformanceIdMutation.mutateAsync({ performanceId, isActive: true });
+  const handleAddPerformanceId = async (performanceId: string, performanceName: string) => {
+    await createPerformanceIdMutation.mutateAsync({ performanceId, performanceName, isActive: true });
   };
 
   const handleResetPassword = async (id: string, password: string) => {
     await resetPasswordMutation.mutateAsync({ id, password });
+  };
+
+  const handleDeleteMachine = async (id: string) => {
+    await deleteMachineMutation.mutateAsync(id);
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    await deleteUserMutation.mutateAsync(id);
+  };
+
+  const handleDeletePartNumber = async (id: string) => {
+    await deletePartNumberMutation.mutateAsync(id);
+  };
+
+  const handleDeleteOrderNumber = async (id: string) => {
+    await deleteOrderNumberMutation.mutateAsync(id);
+  };
+
+  const handleDeletePerformanceId = async (id: string) => {
+    await deletePerformanceIdMutation.mutateAsync(id);
   };
 
   const isLoading = usersLoading || machinesLoading || partsLoading || ordersLoading || performanceLoading;
@@ -195,15 +301,20 @@ export default function AdminPage() {
         <AdminDashboard
           users={users}
           bdeMachines={bdeMachines}
-          partNumbers={partNumbers.map((p: any) => p.partNumber)}
-          orderNumbers={orderNumbers.map((o: any) => o.orderNumber)}
-          performanceIds={performanceIds.map((p: any) => p.performanceId)}
+          partNumbers={partNumbers}
+          orderNumbers={orderNumbers}
+          performanceIds={performanceIds}
           onAddUser={handleAddUser}
           onAddMachine={handleAddMachine}
           onAddPartNumber={handleAddPartNumber}
           onAddOrderNumber={handleAddOrderNumber}
           onAddPerformanceId={handleAddPerformanceId}
           onResetPassword={handleResetPassword}
+          onDeleteMachine={handleDeleteMachine}
+          onDeleteUser={handleDeleteUser}
+          onDeletePartNumber={handleDeletePartNumber}
+          onDeleteOrderNumber={handleDeleteOrderNumber}
+          onDeletePerformanceId={handleDeletePerformanceId}
         />
       )}
     </div>

@@ -141,6 +141,39 @@ export default function WorkTrackerPage() {
     }
   }, [machine, users]);
 
+  // Global timer - updates ALL running sessions simultaneously
+  useEffect(() => {
+    let tickCount = 0;
+    
+    const interval = setInterval(() => {
+      tickCount++;
+      const shouldSyncBackend = tickCount % 10 === 0; // Sync to backend every 10 seconds
+      
+      setSessions((prevSessions) => {
+        // Update duration for all running sessions
+        const updated = prevSessions.map((session) => {
+          if (session.isRunning) {
+            const newDuration = session.duration + 1;
+            
+            // Update backend every 10 seconds to reduce API calls
+            if (shouldSyncBackend) {
+              updateSessionMutation.mutate({ 
+                id: session.id, 
+                updates: { duration: newDuration } 
+              });
+            }
+            
+            return { ...session, duration: newDuration };
+          }
+          return session;
+        });
+        return updated;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const createSessionMutation = useMutation({
     mutationFn: async (data: any) => {
       const response = await apiRequest("POST", "/api/sessions", data);
@@ -333,7 +366,7 @@ export default function WorkTrackerPage() {
           machineId={machine.machineId}
           partNumbers={partNumbers.map((p: any) => p.partNumber)}
           orderNumbers={orderNumbers.map((o: any) => o.orderNumber)}
-          performanceIds={performanceIds.map((p: any) => p.performanceId)}
+          performanceIds={performanceIds}
           recentPartNumbers={recentParts}
           recentOrderNumbers={recentOrders}
           recentPerformanceIds={recentPerformance}

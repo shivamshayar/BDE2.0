@@ -45,18 +45,32 @@ interface BDEMachine {
   lastLoginAt?: string;
 }
 
+interface MasterDataItem {
+  id?: string;
+  partNumber?: string;
+  orderNumber?: string;
+  performanceId?: string;
+  performanceName?: string;
+  isActive: boolean;
+}
+
 interface AdminDashboardProps {
   users?: User[];
-  partNumbers?: string[];
-  orderNumbers?: string[];
-  performanceIds?: string[];
+  partNumbers?: MasterDataItem[];
+  orderNumbers?: MasterDataItem[];
+  performanceIds?: MasterDataItem[];
   bdeMachines?: BDEMachine[];
   onAddUser?: (name: string, imageUrl: string | null) => Promise<void>;
   onAddMachine?: (machineId: string, password: string, department: string, isAdmin: boolean) => Promise<void>;
   onAddPartNumber?: (partNumber: string) => Promise<void>;
   onAddOrderNumber?: (orderNumber: string) => Promise<void>;
-  onAddPerformanceId?: (performanceId: string) => Promise<void>;
+  onAddPerformanceId?: (performanceId: string, performanceName: string) => Promise<void>;
   onResetPassword?: (machineId: string, password: string) => Promise<void>;
+  onDeleteMachine?: (id: string) => Promise<void>;
+  onDeleteUser?: (id: string) => Promise<void>;
+  onDeletePartNumber?: (id: string) => Promise<void>;
+  onDeleteOrderNumber?: (id: string) => Promise<void>;
+  onDeletePerformanceId?: (id: string) => Promise<void>;
 }
 
 export default function AdminDashboard({
@@ -71,14 +85,21 @@ export default function AdminDashboard({
   onAddOrderNumber,
   onAddPerformanceId,
   onResetPassword,
+  onDeleteMachine,
+  onDeleteUser,
+  onDeletePartNumber,
+  onDeleteOrderNumber,
+  onDeletePerformanceId,
 }: AdminDashboardProps) {
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState<BDEMachine | null>(null);
   const [activeTab, setActiveTab] = useState("machines");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<{ type: string; id: string; name: string } | null>(null);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -89,6 +110,8 @@ export default function AdminDashboard({
     isAdmin: false,
     newPassword: "",
     confirmPassword: "",
+    performanceId: "",
+    performanceName: "",
   });
   const [selectedAvatarIndex, setSelectedAvatarIndex] = useState<number>(0);
 
@@ -109,7 +132,7 @@ export default function AdminDashboard({
     }
     
     try {
-      const items = partNumbers.map(pn => ({ id: pn, value: pn }));
+      const items = partNumbers.map(pn => ({ id: pn.partNumber!, value: pn.partNumber! }));
       await downloadBarcodesAsPDF(items, "Part Numbers Barcodes");
       toast({
         title: "Success",
@@ -135,7 +158,7 @@ export default function AdminDashboard({
     }
     
     try {
-      const items = orderNumbers.map(on => ({ id: on, value: on }));
+      const items = orderNumbers.map(on => ({ id: on.orderNumber!, value: on.orderNumber! }));
       await downloadBarcodesAsPDF(items, "Order Numbers Barcodes");
       toast({
         title: "Success",
@@ -161,7 +184,11 @@ export default function AdminDashboard({
     }
     
     try {
-      const items = performanceIds.map(pid => ({ id: pid, value: pid }));
+      const items = performanceIds.map(pid => ({ 
+        id: pid.performanceId!, 
+        value: pid.performanceId!,
+        description: pid.performanceName 
+      }));
       await downloadBarcodesAsPDF(items, "Performance IDs Barcodes");
       toast({
         title: "Success",
@@ -182,6 +209,52 @@ export default function AdminDashboard({
     setFormData(prev => ({ ...prev, newPassword: "", confirmPassword: "" }));
   };
 
+  const handleDeleteClick = (type: string, id: string, name: string) => {
+    setDeleteItem({ type, id, name });
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteItem) return;
+
+    setIsSubmitting(true);
+    try {
+      switch (deleteItem.type) {
+        case 'machine':
+          await onDeleteMachine?.(deleteItem.id);
+          break;
+        case 'user':
+          await onDeleteUser?.(deleteItem.id);
+          break;
+        case 'partNumber':
+          await onDeletePartNumber?.(deleteItem.id);
+          break;
+        case 'orderNumber':
+          await onDeleteOrderNumber?.(deleteItem.id);
+          break;
+        case 'performanceId':
+          await onDeletePerformanceId?.(deleteItem.id);
+          break;
+      }
+
+      toast({
+        title: t.admin.deleteSuccess || "Deleted successfully",
+        description: `${deleteItem.name} ${t.admin.deleteSuccessDescription || "has been deleted"}`,
+      });
+
+      setShowDeleteDialog(false);
+      setDeleteItem(null);
+    } catch (error) {
+      toast({
+        title: t.admin.deleteError || "Error",
+        description: t.admin.deleteErrorDescription || "Failed to delete item",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleOpenAddDialog = () => {
     setFormData({
       name: "",
@@ -191,6 +264,8 @@ export default function AdminDashboard({
       isAdmin: false,
       newPassword: "",
       confirmPassword: "",
+      performanceId: "",
+      performanceName: "",
     });
     setSelectedAvatarIndex(0);
     setShowAddDialog(true);
@@ -226,11 +301,11 @@ export default function AdminDashboard({
         }
         await onAddOrderNumber?.(formData.name);
       } else if (activeTab === "performance") {
-        if (!formData.name) {
-          alert("Please enter a performance ID");
+        if (!formData.performanceId || !formData.performanceName) {
+          alert("Please enter both performance ID and name");
           return;
         }
-        await onAddPerformanceId?.(formData.name);
+        await onAddPerformanceId?.(formData.performanceId, formData.performanceName);
       }
       setShowAddDialog(false);
     } catch (error) {
@@ -355,14 +430,24 @@ export default function AdminDashboard({
                           {formatDate(machine.lastLoginAt)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleResetPassword(machine)}
-                            data-testid={`button-reset-password-${machine.id}`}
-                          >
-                            <Key className="w-4 h-4" />
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleResetPassword(machine)}
+                              data-testid={`button-reset-password-${machine.id}`}
+                            >
+                              <Key className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDeleteClick('machine', machine.id, machine.machineId)}
+                              data-testid={`button-delete-machine-${machine.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -404,6 +489,7 @@ export default function AdminDashboard({
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t.admin.user}</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -419,6 +505,16 @@ export default function AdminDashboard({
                             </Avatar>
                             <span className="font-medium">{user.name}</span>
                           </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDeleteClick('user', user.id, user.name)}
+                            data-testid={`button-delete-user-${user.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -459,14 +555,25 @@ export default function AdminDashboard({
                     <TableRow>
                       <TableHead>{t.tracker.partNumber}</TableHead>
                       <TableHead>{t.admin.barcode}</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {partNumbers.map((pn, idx) => (
-                      <TableRow key={idx} data-testid={`row-part-${idx}`}>
-                        <TableCell className="font-mono">{pn}</TableCell>
+                    {partNumbers.map((pn) => (
+                      <TableRow key={pn.id!} data-testid={`row-part-${pn.id}`}>
+                        <TableCell className="font-mono">{pn.partNumber}</TableCell>
                         <TableCell>
-                          <BarcodeDisplay text={pn} />
+                          <BarcodeDisplay text={pn.partNumber!} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDeleteClick('partNumber', pn.id!, pn.partNumber!)}
+                            data-testid={`button-delete-part-${pn.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -507,14 +614,25 @@ export default function AdminDashboard({
                     <TableRow>
                       <TableHead>{t.tracker.orderNumber}</TableHead>
                       <TableHead>{t.admin.barcode}</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orderNumbers.map((on, idx) => (
-                      <TableRow key={idx} data-testid={`row-order-${idx}`}>
-                        <TableCell className="font-mono">{on}</TableCell>
+                    {orderNumbers.map((on) => (
+                      <TableRow key={on.id!} data-testid={`row-order-${on.id}`}>
+                        <TableCell className="font-mono">{on.orderNumber}</TableCell>
                         <TableCell>
-                          <BarcodeDisplay text={on} />
+                          <BarcodeDisplay text={on.orderNumber!} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDeleteClick('orderNumber', on.id!, on.orderNumber!)}
+                            data-testid={`button-delete-order-${on.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -553,16 +671,29 @@ export default function AdminDashboard({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t.tracker.performanceId}</TableHead>
+                      <TableHead>Performance ID</TableHead>
+                      <TableHead>Performance Name</TableHead>
                       <TableHead>{t.admin.barcode}</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {performanceIds.map((pid, idx) => (
-                      <TableRow key={idx} data-testid={`row-performance-${idx}`}>
-                        <TableCell className="font-mono">{pid}</TableCell>
+                    {performanceIds.map((pid) => (
+                      <TableRow key={pid.performanceId} data-testid={`row-performance-${pid.performanceId}`}>
+                        <TableCell className="font-mono">{pid.performanceId}</TableCell>
+                        <TableCell className="font-medium">{pid.performanceName}</TableCell>
                         <TableCell>
-                          <BarcodeDisplay text={pid} />
+                          <BarcodeDisplay text={pid.performanceId!} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDeleteClick('performanceId', pid.performanceId!, `${pid.performanceId} - ${pid.performanceName}`)}
+                            data-testid={`button-delete-performance-${pid.performanceId}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -692,19 +823,40 @@ export default function AdminDashboard({
                     </div>
                   </div>
                 </>
+              ) : activeTab === "performance" ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="performanceId">Performance ID *</Label>
+                    <Input 
+                      id="performanceId" 
+                      placeholder="e.g., P001"
+                      value={formData.performanceId}
+                      onChange={(e) => setFormData(prev => ({ ...prev, performanceId: e.target.value }))}
+                      data-testid="input-performance-id" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="performanceName">Performance Name *</Label>
+                    <Input 
+                      id="performanceName" 
+                      placeholder="e.g., Assembly Line A"
+                      value={formData.performanceName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, performanceName: e.target.value }))}
+                      data-testid="input-performance-name" 
+                    />
+                  </div>
+                </>
               ) : (
                 <div className="space-y-2">
                   <Label htmlFor="name">
                     {activeTab === "parts" 
                       ? t.tracker.partNumber
-                      : activeTab === "orders"
-                      ? t.tracker.orderNumber
-                      : t.tracker.performanceId
+                      : t.tracker.orderNumber
                     }
                   </Label>
                   <Input 
                     id="name" 
-                    placeholder={`Enter ${activeTab === "parts" ? "part number" : activeTab === "orders" ? "order number" : "performance ID"}`}
+                    placeholder={`Enter ${activeTab === "parts" ? "part number" : "order number"}`}
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                     data-testid="input-add-name" 
@@ -780,6 +932,37 @@ export default function AdminDashboard({
                 data-testid="button-confirm-reset"
               >
                 {isSubmitting ? "Resetting..." : "Reset Password"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t.admin.confirmDelete || "Confirm Delete"}</DialogTitle>
+              <DialogDescription>
+                {t.admin.deleteConfirmMessage || "Are you sure you want to delete"} "{deleteItem?.name}"?
+                {t.admin.deleteWarning || " This action cannot be undone."}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowDeleteDialog(false)} 
+                disabled={isSubmitting}
+                data-testid="button-cancel-delete"
+              >
+                {t.cancel}
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={handleConfirmDelete} 
+                disabled={isSubmitting}
+                data-testid="button-confirm-delete"
+              >
+                {isSubmitting ? (t.admin.deleting || "Deleting...") : t.delete}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -37,6 +37,11 @@ interface WorkLog {
   completedAt: string;
 }
 
+interface PerformanceIdItem {
+  performanceId: string;
+  performanceName: string;
+}
+
 interface WorkHistoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -44,7 +49,7 @@ interface WorkHistoryDialogProps {
   userName: string;
   partNumbers: string[];
   orderNumbers: string[];
-  performanceIds: string[];
+  performanceIds: PerformanceIdItem[];
 }
 
 export default function WorkHistoryDialog({
@@ -316,8 +321,8 @@ export default function WorkHistoryDialog({
                               </SelectTrigger>
                               <SelectContent>
                                 {performanceIds.map((perf) => (
-                                  <SelectItem key={perf} value={perf}>
-                                    {perf}
+                                  <SelectItem key={perf.performanceId} value={perf.performanceId}>
+                                    {perf.performanceName}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
