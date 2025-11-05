@@ -3,6 +3,23 @@
 ## Project Overview
 A comprehensive Business Data Entry (BDE) system for tracking factory worker performance on production machines. Features machine-based authentication, multi-user session management, timer-based work tracking, and admin dashboard for managing master data.
 
+## Recent Changes (November 5, 2025)
+- ✅ **Production-Level Combined QR Code Parser** - Completely rewritten QR code parsing system
+  - Supports 4 different combined QR code formats with smart detection
+  - Pattern priority system ensures correct parsing order
+  - Confidence scoring (high/medium/low) for parsed results
+  - Comprehensive validation with detailed logging
+  - Test suite with automated validation
+  - Dedicated test page at `/qr-test` for validating QR patterns
+  - Handles edge cases: reversed order/part, variable length numbers, multiple dashes
+- ✅ **Edit Functionality** - Complete edit capability for all admin panel entities
+  - Edit BDE machines (machine ID, department, admin status)
+  - Edit users (name, avatar image)
+  - Edit part numbers, order numbers, performance IDs
+  - All edits with proper validation and error handling
+  - Backend PATCH routes for all entities
+  - Frontend edit dialogs with pre-filled forms
+
 ## Recent Changes (October 28, 2025)
 - ✅ **Combined QR code support** - Scan QR codes containing both order and part numbers in one code
   - Supports 3 format variations: `\d{1,5}/\d{1,4}`, `\d{1,5}-\d{1,3}/\d{1,4}`, `\d{1,4}-\d{5}`
@@ -116,12 +133,21 @@ Located in `shared/schema.ts`:
   - German keyboard normalization (ß → -, etc.) for international compatibility
   - Works with Part Number, Order Number, and Performance ID fields
   - No special configuration needed - plug and play!
-- **Combined QR Code Support**: Scan QR codes containing both order and part numbers
-  - Format 1: `12345/123` - order/part separated by slash
-  - Format 2: `12345-123/1234` - complex order format with slash separator
-  - Format 3: `1234-12345` - order-part separated by dash
-  - Automatically detects format and fills both fields
-  - Focus automatically moves to Performance ID field after parsing
+- **Production-Level Combined QR Code Parser**: Advanced multi-format QR code parsing
+  - **Format 1 (Slash Separator)**: `ORDER/PART` - e.g., `12345/678` (highest priority, highest confidence)
+  - **Format 2 (Complex Order Slash)**: `COMPLEX-ORDER/PART` - e.g., `12345-123/1234` (high priority, high confidence)
+  - **Format 3 (Multiple Dashes)**: `SEGMENT-SEGMENT-SEGMENT` - e.g., `12345-678-901` (smart length detection, medium confidence)
+  - **Format 4 (Dash Separator)**: `ORDER-PART` - e.g., `12345-678` or `1234-12345` (smart length detection, medium confidence)
+    - Automatically detects which segment is order vs part based on:
+      - Length differences (longer segment likely = order)
+      - Typical patterns (3-4 digits = part, 5+ digits = order)
+      - Handles reversed patterns (part-order)
+  - Pattern priority system prevents mismatches
+  - Confidence scoring for validation
+  - Comprehensive validation with detailed console logging
+  - Test page at `/qr-test` for validating custom patterns
+  - Automatically fills both order and part number fields
+  - Focus automatically moves to Performance ID field after successful parse
 - **Auto-Focus on Part Number**: Part Number field automatically focused on page load for immediate scanning
 
 ### Design System

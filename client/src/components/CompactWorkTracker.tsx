@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from '@/contexts/LanguageContext';
+import { parseCombinedQRCode, validateParsedResult } from '@/lib/qr-code-parser';
 
 interface UserSession {
   id: string;
@@ -230,35 +231,7 @@ export default function CompactWorkTracker({
     return text.split('').map(char => charMap[char] || char).join('');
   };
 
-  // Detect and parse combined QR code formats (order & part number)
-  const parseCombinedQRCode = (text: string): { orderNumber: string; partNumber: string } | null => {
-    // Version 1: ^\d{1,5}/\d{1,4}$ - e.g., "12345/123"
-    const format1 = /^\d{1,5}\/\d{1,4}$/;
-    if (format1.test(text)) {
-      const [orderNumber, partNumber] = text.split('/');
-      return { orderNumber, partNumber };
-    }
-    
-    // Version 2: ^\d{1,5}-\d{1,3}/\d{1,4}$ - e.g., "12345-123/1234"
-    const format2 = /^\d{1,5}-\d{1,3}\/\d{1,4}$/;
-    if (format2.test(text)) {
-      const parts = text.split('/');
-      const orderNumber = parts[0]; // "12345-123"
-      const partNumber = parts[1];  // "1234"
-      return { orderNumber, partNumber };
-    }
-    
-    // Version 3: ^\d{1,4}-\d{5}$ - e.g., "1234-12345"
-    const format3 = /^\d{1,4}-\d{5}$/;
-    if (format3.test(text)) {
-      const parts = text.split('-');
-      const orderNumber = parts[0]; // "1234"
-      const partNumber = parts[1];  // "12345"
-      return { orderNumber, partNumber };
-    }
-    
-    return null;
-  };
+  // Production-level combined QR code parsing (using robust parser)
 
   const handlePartNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -278,9 +251,11 @@ export default function CompactWorkTracker({
     // Check if this is a combined QR code (order & part number) - must check FIRST before updating state
     if (normalized) {
       const combined = parseCombinedQRCode(normalized);
-      if (combined) {
+      if (combined && validateParsedResult(combined)) {
         console.log('[Combined QR Detected in Part Field]', { 
           scanned: normalized, 
+          format: combined.format,
+          confidence: combined.confidence,
           orderNumber: combined.orderNumber, 
           partNumber: combined.partNumber,
           timeDiff,
@@ -336,9 +311,11 @@ export default function CompactWorkTracker({
     // Check if this is a combined QR code (order & part number) - must check FIRST
     if (normalized) {
       const combined = parseCombinedQRCode(normalized);
-      if (combined) {
+      if (combined && validateParsedResult(combined)) {
         console.log('[Combined QR Detected in Order Field]', { 
           scanned: normalized, 
+          format: combined.format,
+          confidence: combined.confidence,
           orderNumber: combined.orderNumber, 
           partNumber: combined.partNumber,
           timeDiff,

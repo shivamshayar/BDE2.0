@@ -9,6 +9,7 @@ import LoginPage from "@/pages/LoginPage";
 import UserSelection from "@/pages/UserSelection";
 import WorkTrackerPage from "@/pages/WorkTrackerPage";
 import AdminPage from "@/pages/AdminPage";
+import QRCodeTestPage from "@/pages/QRCodeTestPage";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/" component={LoginPage} />
       <Route path="/tracker" component={WorkTrackerPage} />
       <Route path="/admin" component={AdminPage} />
+      <Route path="/qr-test" component={QRCodeTestPage} />
       <Route component={NotFound} />
     </Switch>
   );
