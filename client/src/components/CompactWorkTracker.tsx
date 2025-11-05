@@ -68,7 +68,6 @@ export default function CompactWorkTracker({
   onStopSession,
 }: CompactWorkTrackerProps) {
   const { t } = useLanguage();
-  const [showStopDialog, setShowStopDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [localDuration, setLocalDuration] = useState(session.duration);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -100,16 +99,37 @@ export default function CompactWorkTracker({
     setLocalDuration(session.duration);
   }, [session.duration]);
 
-  // Auto-focus Part Number field when component mounts or when timer is not running
+  // Auto-focus Part Number field when component mounts, timer stops, or user switches
   useEffect(() => {
     if (!session.isRunning && partInputRef.current) {
-      // Small delay to ensure DOM is ready
-      const timer = setTimeout(() => {
-        partInputRef.current?.focus();
-      }, 100);
-      return () => clearTimeout(timer);
+      // Multiple attempts with increasing delays for Raspberry Pi compatibility
+      const attemptFocus = (attempt: number = 0) => {
+        if (attempt > 5) return; // Max 5 attempts
+        
+        const delay = 100 + (attempt * 100); // 100ms, 200ms, 300ms, etc.
+        const timer = setTimeout(() => {
+          if (partInputRef.current && document.activeElement !== partInputRef.current) {
+            partInputRef.current.focus();
+            console.log(`[Auto-focus] Part Number field focused for user ${session.userName} (attempt ${attempt + 1})`);
+            
+            // Verify focus worked, retry if not
+            setTimeout(() => {
+              if (document.activeElement !== partInputRef.current) {
+                attemptFocus(attempt + 1);
+              }
+            }, 50);
+          }
+        }, delay);
+        
+        return timer;
+      };
+      
+      const timer = attemptFocus(0);
+      return () => {
+        if (timer) clearTimeout(timer);
+      };
     }
-  }, [session.isRunning]);
+  }, [session.isRunning, session.id]);
 
   const initials = session.userName
     .split(" ")
@@ -131,10 +151,7 @@ export default function CompactWorkTracker({
   };
 
   const handleStop = () => {
-    setShowStopDialog(true);
-  };
-
-  const confirmStop = () => {
+    // Auto-submit without confirmation
     onUpdateSession?.(session.id, { isRunning: false });
     if (onStopSession) {
       onStopSession(session.id, {
@@ -151,7 +168,6 @@ export default function CompactWorkTracker({
       orderNumber: "",
       performanceId: "",
     });
-    setShowStopDialog(false);
   };
 
 
@@ -248,12 +264,6 @@ export default function CompactWorkTracker({
     const newValue = e.target.value;
     const normalized = normalizeGermanChars(newValue);
     
-    // Skip processing if we just parsed a combined QR code
-    if (combinedQRParsedRef.current) {
-      combinedQRParsedRef.current = false;
-      return;
-    }
-    
     const now = Date.now();
     const timeDiff = now - partLastKeyTimeRef.current;
     partLastKeyTimeRef.current = now;
@@ -263,26 +273,33 @@ export default function CompactWorkTracker({
     }
     
     const wasScanning = partIsScanningRef.current;
-    const isRapidTyping = timeDiff > 0 && timeDiff < 50;
+    const isRapidTyping = timeDiff > 0 && timeDiff < 100; // Increased from 50ms to 100ms for slower scanners
     
-    // Check if this is a combined QR code (order & part number)
-    if (isRapidTyping && normalized) {
+    // Check if this is a combined QR code (order & part number) - must check FIRST before updating state
+    if (normalized) {
       const combined = parseCombinedQRCode(normalized);
       if (combined) {
-        combinedQRParsedRef.current = true;
+        console.log('[Combined QR Detected in Part Field]', { 
+          scanned: normalized, 
+          orderNumber: combined.orderNumber, 
+          partNumber: combined.partNumber,
+          timeDiff,
+          isRapidTyping
+        });
+        // Always parse combined codes, regardless of timing
         onUpdateSession?.(session.id, { 
           orderNumber: combined.orderNumber, 
           partNumber: combined.partNumber 
         });
         partIsScanningRef.current = false;
         partScanTimeoutRef.current = setTimeout(() => {
-          combinedQRParsedRef.current = false;
           perfInputRef.current?.focus();
         }, 150);
-        return;
+        return; // STOP HERE - don't process as normal part number
       }
     }
     
+    // Normal part number processing (not a combined code)
     if (isRapidTyping && wasScanning) {
       onUpdateSession?.(session.id, { partNumber: normalized });
     } else if (isRapidTyping && !wasScanning) {
@@ -305,12 +322,6 @@ export default function CompactWorkTracker({
     const newValue = e.target.value;
     const normalized = normalizeGermanChars(newValue);
     
-    // Skip processing if we just parsed a combined QR code
-    if (combinedQRParsedRef.current) {
-      combinedQRParsedRef.current = false;
-      return;
-    }
-    
     const now = Date.now();
     const timeDiff = now - orderLastKeyTimeRef.current;
     orderLastKeyTimeRef.current = now;
@@ -320,23 +331,29 @@ export default function CompactWorkTracker({
     }
     
     const wasScanning = orderIsScanningRef.current;
-    const isRapidTyping = timeDiff > 0 && timeDiff < 50;
+    const isRapidTyping = timeDiff > 0 && timeDiff < 100; // Increased from 50ms to 100ms for slower scanners
     
-    // Check if this is a combined QR code (order & part number)
-    if (isRapidTyping && normalized) {
+    // Check if this is a combined QR code (order & part number) - must check FIRST
+    if (normalized) {
       const combined = parseCombinedQRCode(normalized);
       if (combined) {
-        combinedQRParsedRef.current = true;
+        console.log('[Combined QR Detected in Order Field]', { 
+          scanned: normalized, 
+          orderNumber: combined.orderNumber, 
+          partNumber: combined.partNumber,
+          timeDiff,
+          isRapidTyping
+        });
+        // Always parse combined codes, regardless of timing
         onUpdateSession?.(session.id, { 
           orderNumber: combined.orderNumber, 
           partNumber: combined.partNumber 
         });
         orderIsScanningRef.current = false;
         orderScanTimeoutRef.current = setTimeout(() => {
-          combinedQRParsedRef.current = false;
           perfInputRef.current?.focus();
         }, 150);
-        return;
+        return; // STOP HERE - don't process as normal order number
       }
     }
     
@@ -372,12 +389,6 @@ export default function CompactWorkTracker({
     const newValue = e.target.value;
     const normalized = normalizeGermanChars(newValue);
     
-    // Skip processing if we just parsed a combined QR code
-    if (combinedQRParsedRef.current) {
-      combinedQRParsedRef.current = false;
-      return;
-    }
-    
     const now = Date.now();
     const timeDiff = now - perfLastKeyTimeRef.current;
     perfLastKeyTimeRef.current = now;
@@ -388,24 +399,6 @@ export default function CompactWorkTracker({
     
     const wasScanning = perfIsScanningRef.current;
     const isRapidTyping = timeDiff > 0 && timeDiff < 50;
-    
-    // Check if this is a combined QR code (order & part number)
-    if (isRapidTyping && normalized) {
-      const combined = parseCombinedQRCode(normalized);
-      if (combined) {
-        combinedQRParsedRef.current = true;
-        onUpdateSession?.(session.id, { 
-          orderNumber: combined.orderNumber, 
-          partNumber: combined.partNumber 
-        });
-        perfIsScanningRef.current = false;
-        perfScanTimeoutRef.current = setTimeout(() => {
-          combinedQRParsedRef.current = false;
-          perfInputRef.current?.focus();
-        }, 150);
-        return;
-      }
-    }
     
     // If part number is empty and this is a scan, auto-fill part number instead
     if (!session.partNumber && isRapidTyping && normalized) {
@@ -453,7 +446,7 @@ export default function CompactWorkTracker({
       <header className="glass-effect border-b px-8 py-4 shrink-0">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">
-            Department : <span className="gradient-text">{department}</span>
+            {t.admin.department}: <span className="gradient-text">{department}</span>
           </h1>
           <div className="flex items-center gap-3">
             <Button
@@ -708,24 +701,6 @@ export default function CompactWorkTracker({
         }
         onSelect={handleSelectValue}
       />
-
-      {/* Stop Confirmation Dialog */}
-      <AlertDialog open={showStopDialog} onOpenChange={setShowStopDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t.tracker.stop}</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will stop the timer and submit work data for {session.userName}. You cannot undo this action.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-stop">{t.cancel}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmStop} data-testid="button-confirm-stop">
-              {t.tracker.submit}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Overtime Warning Dialog */}
       <AlertDialog open={showOvertimeNotification} onOpenChange={setShowOvertimeNotification}>

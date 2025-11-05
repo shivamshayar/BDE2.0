@@ -59,12 +59,15 @@ export interface IStorage {
   // Master Data
   getAllPartNumbers(): Promise<PartNumber[]>;
   createPartNumber(partNumber: InsertPartNumber): Promise<PartNumber>;
+  updatePartNumber(id: string, updates: Partial<PartNumber>): Promise<PartNumber | undefined>;
   deletePartNumber(id: string): Promise<void>;
   getAllOrderNumbers(): Promise<OrderNumber[]>;
   createOrderNumber(orderNumber: InsertOrderNumber): Promise<OrderNumber>;
+  updateOrderNumber(id: string, updates: Partial<OrderNumber>): Promise<OrderNumber | undefined>;
   deleteOrderNumber(id: string): Promise<void>;
   getAllPerformanceIds(): Promise<PerformanceId[]>;
   createPerformanceId(performanceId: InsertPerformanceId): Promise<PerformanceId>;
+  updatePerformanceId(id: string, updates: Partial<PerformanceId>): Promise<PerformanceId | undefined>;
   deletePerformanceId(id: string): Promise<void>;
 }
 
@@ -223,6 +226,21 @@ export class DbStorage implements IStorage {
 
   async createPerformanceId(performanceId: InsertPerformanceId): Promise<PerformanceId> {
     const result = await db.insert(performanceIds).values(performanceId).returning();
+    return result[0];
+  }
+
+  async updatePartNumber(id: string, updates: Partial<PartNumber>): Promise<PartNumber | undefined> {
+    const result = await db.update(partNumbers).set(updates).where(eq(partNumbers.id, id)).returning();
+    return result[0];
+  }
+
+  async updateOrderNumber(id: string, updates: Partial<OrderNumber>): Promise<OrderNumber | undefined> {
+    const result = await db.update(orderNumbers).set(updates).where(eq(orderNumbers.id, id)).returning();
+    return result[0];
+  }
+
+  async updatePerformanceId(id: string, updates: Partial<PerformanceId>): Promise<PerformanceId | undefined> {
+    const result = await db.update(performanceIds).set(updates).where(eq(performanceIds.id, id)).returning();
     return result[0];
   }
 

@@ -121,6 +121,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/admin/machines/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { machineId, department, isAdmin } = req.body;
+
+      const updates: Partial<any> = {};
+      if (machineId !== undefined) updates.machineId = machineId;
+      if (department !== undefined) updates.department = department;
+      if (isAdmin !== undefined) updates.isAdmin = isAdmin;
+
+      const machine = await storage.updateBdeMachine(id, updates);
+      
+      if (!machine) {
+        return res.status(404).json({ error: "Machine not found" });
+      }
+
+      res.json({ ...machine, password: undefined });
+    } catch (error: any) {
+      console.error("Update machine error:", error);
+      if (error.code === "23505") {
+        return res.status(409).json({ error: "Machine ID already exists" });
+      }
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.patch("/api/admin/machines/:id/password", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
@@ -177,6 +203,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(user);
     } catch (error) {
       console.error("Create user error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/users/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { name, imageUrl } = req.body;
+
+      const updates: Partial<any> = {};
+      if (name !== undefined) updates.name = name;
+      if (imageUrl !== undefined) updates.imageUrl = imageUrl;
+
+      const user = await storage.updateFactoryUser(id, updates);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json(user);
+    } catch (error) {
+      console.error("Update user error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -382,6 +430,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/master/parts/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { partNumber } = req.body;
+
+      const updates: Partial<any> = {};
+      if (partNumber !== undefined) updates.partNumber = partNumber;
+
+      const part = await storage.updatePartNumber(id, updates);
+      
+      if (!part) {
+        return res.status(404).json({ error: "Part number not found" });
+      }
+
+      res.json(part);
+    } catch (error: any) {
+      console.error("Update part error:", error);
+      if (error.code === "23505") {
+        return res.status(409).json({ error: "Part number already exists" });
+      }
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.delete("/api/master/parts/:id", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
@@ -422,6 +494,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/master/orders/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { orderNumber } = req.body;
+
+      const updates: Partial<any> = {};
+      if (orderNumber !== undefined) updates.orderNumber = orderNumber;
+
+      const order = await storage.updateOrderNumber(id, updates);
+      
+      if (!order) {
+        return res.status(404).json({ error: "Order number not found" });
+      }
+
+      res.json(order);
+    } catch (error: any) {
+      console.error("Update order error:", error);
+      if (error.code === "23505") {
+        return res.status(409).json({ error: "Order number already exists" });
+      }
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.delete("/api/master/orders/:id", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
@@ -455,6 +551,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(performance);
     } catch (error: any) {
       console.error("Create performance error:", error);
+      if (error.code === "23505") {
+        return res.status(409).json({ error: "Performance ID already exists" });
+      }
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/master/performance/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { performanceId, performanceName } = req.body;
+
+      const updates: Partial<any> = {};
+      if (performanceId !== undefined) updates.performanceId = performanceId;
+      if (performanceName !== undefined) updates.performanceName = performanceName;
+
+      const performance = await storage.updatePerformanceId(id, updates);
+      
+      if (!performance) {
+        return res.status(404).json({ error: "Performance ID not found" });
+      }
+
+      res.json(performance);
+    } catch (error: any) {
+      console.error("Update performance error:", error);
       if (error.code === "23505") {
         return res.status(409).json({ error: "Performance ID already exists" });
       }

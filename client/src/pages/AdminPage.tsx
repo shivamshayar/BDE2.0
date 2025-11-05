@@ -154,6 +154,109 @@ export default function AdminPage() {
     },
   });
 
+  // Edit mutations
+  const editUserMutation = useMutation({
+    mutationFn: async ({ id, name, imageUrl }: { id: string; name: string; imageUrl: string | null }) => {
+      try {
+        const response = await apiRequest("PATCH", `/api/users/${id}`, { name, imageUrl });
+        return await response.json();
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: "Success", description: "User updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update user", variant: "destructive" });
+    },
+  });
+
+  const editMachineMutation = useMutation({
+    mutationFn: async ({ id, machineId, department, isAdmin }: { id: string; machineId: string; department: string; isAdmin: boolean }) => {
+      try {
+        const response = await apiRequest("PATCH", `/api/admin/machines/${id}`, { machineId, department, isAdmin });
+        return await response.json();
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/machines"] });
+      toast({ title: "Success", description: "Machine updated successfully" });
+    },
+    onError: (error: any) => {
+      const message = error.message?.includes("409") 
+        ? "Machine ID already exists" 
+        : error.message || "Failed to update machine";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    },
+  });
+
+  const editPartNumberMutation = useMutation({
+    mutationFn: async ({ id, partNumber }: { id: string; partNumber: string }) => {
+      try {
+        const response = await apiRequest("PATCH", `/api/master/parts/${id}`, { partNumber });
+        return await response.json();
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/master/parts"] });
+      toast({ title: "Success", description: "Part number updated successfully" });
+    },
+    onError: (error: any) => {
+      const message = error.message?.includes("409") 
+        ? "Part number already exists" 
+        : error.message || "Failed to update part number";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    },
+  });
+
+  const editOrderNumberMutation = useMutation({
+    mutationFn: async ({ id, orderNumber }: { id: string; orderNumber: string }) => {
+      try {
+        const response = await apiRequest("PATCH", `/api/master/orders/${id}`, { orderNumber });
+        return await response.json();
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/master/orders"] });
+      toast({ title: "Success", description: "Order number updated successfully" });
+    },
+    onError: (error: any) => {
+      const message = error.message?.includes("409") 
+        ? "Order number already exists" 
+        : error.message || "Failed to update order number";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    },
+  });
+
+  const editPerformanceIdMutation = useMutation({
+    mutationFn: async ({ id, performanceId, performanceName }: { id: string; performanceId: string; performanceName: string }) => {
+      try {
+        const response = await apiRequest("PATCH", `/api/master/performance/${id}`, { performanceId, performanceName });
+        return await response.json();
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/master/performance"] });
+      toast({ title: "Success", description: "Performance ID updated successfully" });
+    },
+    onError: (error: any) => {
+      const message = error.message?.includes("409") 
+        ? "Performance ID already exists" 
+        : error.message || "Failed to update performance ID";
+      toast({ title: "Error", description: message, variant: "destructive" });
+    },
+  });
+
   // Delete mutations
   const deleteMachineMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -264,6 +367,26 @@ export default function AdminPage() {
     await resetPasswordMutation.mutateAsync({ id, password });
   };
 
+  const handleEditUser = async (id: string, name: string, imageUrl: string | null) => {
+    await editUserMutation.mutateAsync({ id, name, imageUrl });
+  };
+
+  const handleEditMachine = async (id: string, machineId: string, department: string, isAdmin: boolean) => {
+    await editMachineMutation.mutateAsync({ id, machineId, department, isAdmin });
+  };
+
+  const handleEditPartNumber = async (id: string, partNumber: string) => {
+    await editPartNumberMutation.mutateAsync({ id, partNumber });
+  };
+
+  const handleEditOrderNumber = async (id: string, orderNumber: string) => {
+    await editOrderNumberMutation.mutateAsync({ id, orderNumber });
+  };
+
+  const handleEditPerformanceId = async (id: string, performanceId: string, performanceName: string) => {
+    await editPerformanceIdMutation.mutateAsync({ id, performanceId, performanceName });
+  };
+
   const handleDeleteMachine = async (id: string) => {
     await deleteMachineMutation.mutateAsync(id);
   };
@@ -309,6 +432,11 @@ export default function AdminPage() {
           onAddPartNumber={handleAddPartNumber}
           onAddOrderNumber={handleAddOrderNumber}
           onAddPerformanceId={handleAddPerformanceId}
+          onEditUser={handleEditUser}
+          onEditMachine={handleEditMachine}
+          onEditPartNumber={handleEditPartNumber}
+          onEditOrderNumber={handleEditOrderNumber}
+          onEditPerformanceId={handleEditPerformanceId}
           onResetPassword={handleResetPassword}
           onDeleteMachine={handleDeleteMachine}
           onDeleteUser={handleDeleteUser}

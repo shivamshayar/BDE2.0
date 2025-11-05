@@ -58,6 +58,7 @@ export const translations = {
     // Admin Dashboard
     admin: {
       title: 'Admin Dashboard',
+      backToTracker: 'Back to Tracker',
       settings: 'Settings',
       machines: 'BDE Machines',
       users: 'Users',
@@ -161,6 +162,7 @@ export const translations = {
     // Admin Dashboard
     admin: {
       title: 'Admin-Dashboard',
+      backToTracker: 'Zurück zur Erfassung',
       settings: 'Einstellungen',
       machines: 'BDE-Maschinen',
       users: 'Benutzer',

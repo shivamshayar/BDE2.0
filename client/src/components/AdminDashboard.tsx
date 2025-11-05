@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Users, Package, Activity, ClipboardList, Search, Monitor, Key, Download } from "lucide-react";
+import { Plus, Trash2, Users, Package, Activity, ClipboardList, Search, Monitor, Key, Download, ArrowLeft, Edit } from "lucide-react";
 import { BarcodeDisplay } from "@/components/BarcodeDisplay";
 import { downloadBarcodesAsPDF } from "@/lib/barcode-utils";
 import { useToast } from "@/hooks/use-toast";
@@ -65,6 +66,11 @@ interface AdminDashboardProps {
   onAddPartNumber?: (partNumber: string) => Promise<void>;
   onAddOrderNumber?: (orderNumber: string) => Promise<void>;
   onAddPerformanceId?: (performanceId: string, performanceName: string) => Promise<void>;
+  onEditUser?: (id: string, name: string, imageUrl: string | null) => Promise<void>;
+  onEditMachine?: (id: string, machineId: string, department: string, isAdmin: boolean) => Promise<void>;
+  onEditPartNumber?: (id: string, partNumber: string) => Promise<void>;
+  onEditOrderNumber?: (id: string, orderNumber: string) => Promise<void>;
+  onEditPerformanceId?: (id: string, performanceId: string, performanceName: string) => Promise<void>;
   onResetPassword?: (machineId: string, password: string) => Promise<void>;
   onDeleteMachine?: (id: string) => Promise<void>;
   onDeleteUser?: (id: string) => Promise<void>;
@@ -84,6 +90,11 @@ export default function AdminDashboard({
   onAddPartNumber,
   onAddOrderNumber,
   onAddPerformanceId,
+  onEditUser,
+  onEditMachine,
+  onEditPartNumber,
+  onEditOrderNumber,
+  onEditPerformanceId,
   onResetPassword,
   onDeleteMachine,
   onDeleteUser,
@@ -92,14 +103,17 @@ export default function AdminDashboard({
   onDeletePerformanceId,
 }: AdminDashboardProps) {
   const { t } = useLanguage();
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState<BDEMachine | null>(null);
   const [activeTab, setActiveTab] = useState("machines");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteItem, setDeleteItem] = useState<{ type: string; id: string; name: string } | null>(null);
+  const [editItem, setEditItem] = useState<{ type: string; id: string; data: any } | null>(null);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -255,6 +269,88 @@ export default function AdminDashboard({
     }
   };
 
+  const handleEditClick = (type: string, id: string, data: any) => {
+    setEditItem({ type, id, data });
+    setFormData({
+      name: data.name || data.partNumber || data.orderNumber || "",
+      machineId: data.machineId || "",
+      password: "",
+      department: data.department || "",
+      isAdmin: data.isAdmin || false,
+      newPassword: "",
+      confirmPassword: "",
+      performanceId: data.performanceId || "",
+      performanceName: data.performanceName || "",
+    });
+    if (type === 'user' && data.imageUrl) {
+      const avatarIndex = AVATAR_IMAGES.indexOf(data.imageUrl);
+      setSelectedAvatarIndex(avatarIndex >= 0 ? avatarIndex : 0);
+    }
+    setShowEditDialog(true);
+  };
+
+  const handleConfirmEdit = async () => {
+    if (!editItem) return;
+
+    setIsSubmitting(true);
+    try {
+      switch (editItem.type) {
+        case 'machine':
+          if (!formData.machineId || !formData.department) {
+            alert("Please fill all fields");
+            return;
+          }
+          await onEditMachine?.(editItem.id, formData.machineId, formData.department, formData.isAdmin);
+          break;
+        case 'user':
+          if (!formData.name) {
+            alert("Please fill all fields");
+            return;
+          }
+          const avatarUrl = AVATAR_IMAGES[selectedAvatarIndex];
+          await onEditUser?.(editItem.id, formData.name, avatarUrl);
+          break;
+        case 'partNumber':
+          if (!formData.name) {
+            alert("Please enter a part number");
+            return;
+          }
+          await onEditPartNumber?.(editItem.id, formData.name);
+          break;
+        case 'orderNumber':
+          if (!formData.name) {
+            alert("Please enter an order number");
+            return;
+          }
+          await onEditOrderNumber?.(editItem.id, formData.name);
+          break;
+        case 'performanceId':
+          if (!formData.performanceId || !formData.performanceName) {
+            alert("Please enter both performance ID and name");
+            return;
+          }
+          await onEditPerformanceId?.(editItem.id, formData.performanceId, formData.performanceName);
+          break;
+      }
+
+      toast({
+        title: "Updated successfully",
+        description: "Item has been updated",
+      });
+
+      setShowEditDialog(false);
+      setEditItem(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update item",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleOpenAddDialog = () => {
     setFormData({
       name: "",
@@ -351,13 +447,23 @@ export default function AdminDashboard({
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold" data-testid="text-dashboard-title">
-            {t.admin.title}
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Manage BDE machines, users, and master data
-          </p>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLocation('/tracker')}
+            data-testid="button-back-to-tracker"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold" data-testid="text-dashboard-title">
+              {t.admin.title}
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Manage BDE machines, users, and master data
+            </p>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -434,6 +540,14 @@ export default function AdminDashboard({
                             <Button
                               size="icon"
                               variant="ghost"
+                              onClick={() => handleEditClick('machine', machine.id, machine)}
+                              data-testid={`button-edit-machine-${machine.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
                               onClick={() => handleResetPassword(machine)}
                               data-testid={`button-reset-password-${machine.id}`}
                             >
@@ -507,14 +621,24 @@ export default function AdminDashboard({
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDeleteClick('user', user.id, user.name)}
-                            data-testid={`button-delete-user-${user.id}`}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleEditClick('user', user.id, user)}
+                              data-testid={`button-edit-user-${user.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDeleteClick('user', user.id, user.name)}
+                              data-testid={`button-delete-user-${user.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -566,14 +690,24 @@ export default function AdminDashboard({
                           <BarcodeDisplay text={pn.partNumber!} />
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDeleteClick('partNumber', pn.id!, pn.partNumber!)}
-                            data-testid={`button-delete-part-${pn.id}`}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleEditClick('partNumber', pn.id!, pn)}
+                              data-testid={`button-edit-part-${pn.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDeleteClick('partNumber', pn.id!, pn.partNumber!)}
+                              data-testid={`button-delete-part-${pn.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -625,14 +759,24 @@ export default function AdminDashboard({
                           <BarcodeDisplay text={on.orderNumber!} />
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDeleteClick('orderNumber', on.id!, on.orderNumber!)}
-                            data-testid={`button-delete-order-${on.id}`}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleEditClick('orderNumber', on.id!, on)}
+                              data-testid={`button-edit-order-${on.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDeleteClick('orderNumber', on.id!, on.orderNumber!)}
+                              data-testid={`button-delete-order-${on.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -686,14 +830,24 @@ export default function AdminDashboard({
                           <BarcodeDisplay text={pid.performanceId!} />
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDeleteClick('performanceId', pid.performanceId!, `${pid.performanceId} - ${pid.performanceName}`)}
-                            data-testid={`button-delete-performance-${pid.performanceId}`}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleEditClick('performanceId', pid.performanceId!, pid)}
+                              data-testid={`button-edit-performance-${pid.performanceId}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDeleteClick('performanceId', pid.performanceId!, `${pid.performanceId} - ${pid.performanceName}`)}
+                              data-testid={`button-delete-performance-${pid.performanceId}`}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -879,6 +1033,172 @@ export default function AdminDashboard({
                 data-testid="button-confirm-add"
               >
                 {isSubmitting ? `${t.add}...` : t.add}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editItem?.type === "machine" 
+                  ? "Edit Machine"
+                  : editItem?.type === "user"
+                  ? "Edit User"
+                  : editItem?.type === "partNumber"
+                  ? "Edit Part Number"
+                  : editItem?.type === "orderNumber"
+                  ? "Edit Order Number"
+                  : "Edit Performance ID"
+                }
+              </DialogTitle>
+              <DialogDescription>
+                Update the information for this {editItem?.type === "machine" ? "machine" : editItem?.type === "user" ? "user" : editItem?.type === "partNumber" ? "part number" : editItem?.type === "orderNumber" ? "order number" : "performance ID"}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {editItem?.type === "machine" ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-machineId">{t.admin.machineId}</Label>
+                    <Input 
+                      id="edit-machineId" 
+                      placeholder="e.g., BDE-2" 
+                      value={formData.machineId}
+                      onChange={(e) => setFormData(prev => ({ ...prev, machineId: e.target.value }))}
+                      data-testid="input-edit-machine-id" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-department">{t.admin.department}</Label>
+                    <Input 
+                      id="edit-department" 
+                      placeholder="e.g., Production" 
+                      value={formData.department}
+                      onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                      data-testid="input-edit-department" 
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="edit-isAdmin"
+                      checked={formData.isAdmin}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isAdmin: checked as boolean }))}
+                      data-testid="checkbox-edit-is-admin"
+                    />
+                    <Label 
+                      htmlFor="edit-isAdmin"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {t.admin.isAdmin}
+                    </Label>
+                  </div>
+                </>
+              ) : editItem?.type === "user" ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-name">{t.admin.name}</Label>
+                    <Input 
+                      id="edit-name" 
+                      placeholder="Enter name" 
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      data-testid="input-edit-name" 
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label>{t.admin.selectImage}</Label>
+                    <div className="grid grid-cols-5 gap-2 max-h-64 overflow-y-auto p-2 border rounded-lg">
+                      {AVATAR_IMAGES.map((avatar, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => setSelectedAvatarIndex(index)}
+                          className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all hover-elevate ${
+                            selectedAvatarIndex === index 
+                              ? 'border-primary ring-2 ring-primary ring-offset-2' 
+                              : 'border-border'
+                          }`}
+                          data-testid={`button-edit-avatar-${index}`}
+                        >
+                          <img 
+                            src={avatar} 
+                            alt={`Avatar ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                      <Avatar className="w-16 h-16 border-2">
+                        <AvatarImage src={AVATAR_IMAGES[selectedAvatarIndex]} />
+                        <AvatarFallback>?</AvatarFallback>
+                      </Avatar>
+                      <div className="text-sm">
+                        <p className="font-semibold">Selected Avatar</p>
+                        <p className="text-muted-foreground">Avatar {selectedAvatarIndex + 1} of {AVATAR_IMAGES.length}</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : editItem?.type === "performanceId" ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-performanceId">Performance ID *</Label>
+                    <Input 
+                      id="edit-performanceId" 
+                      placeholder="e.g., P001"
+                      value={formData.performanceId}
+                      onChange={(e) => setFormData(prev => ({ ...prev, performanceId: e.target.value }))}
+                      data-testid="input-edit-performance-id" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-performanceName">Performance Name *</Label>
+                    <Input 
+                      id="edit-performanceName" 
+                      placeholder="e.g., Assembly Line A"
+                      value={formData.performanceName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, performanceName: e.target.value }))}
+                      data-testid="input-edit-performance-name" 
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">
+                    {editItem?.type === "partNumber" 
+                      ? t.tracker.partNumber
+                      : t.tracker.orderNumber
+                    }
+                  </Label>
+                  <Input 
+                    id="edit-name" 
+                    placeholder={`Enter ${editItem?.type === "partNumber" ? "part number" : "order number"}`}
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    data-testid="input-edit-name" 
+                  />
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowEditDialog(false)} 
+                disabled={isSubmitting}
+                data-testid="button-cancel-edit"
+              >
+                {t.cancel}
+              </Button>
+              <Button 
+                onClick={handleConfirmEdit} 
+                disabled={isSubmitting}
+                data-testid="button-confirm-edit"
+              >
+                {isSubmitting ? "Updating..." : "Update"}
               </Button>
             </DialogFooter>
           </DialogContent>
