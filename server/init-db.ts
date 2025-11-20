@@ -83,7 +83,7 @@ export async function initializeDatabase() {
     `);
 
     // Drop and recreate performance_ids table with new schema
-    await db.execute(sql`DROP TABLE IF EXISTS performance_ids CASCADE;`);
+    // await db.execute(sql`DROP TABLE IF EXISTS performance_ids CASCADE;`);
     
     await db.execute(sql`
       CREATE TABLE performance_ids (
