@@ -95,27 +95,34 @@ export default function CompactWorkTracker({
   
   // Flag to prevent onChange from firing after combined QR code parsing
   const combinedQRParsedRef = useRef<boolean>(false);
+  
+  // Debounce refs for combined QR code detection
+  // We need to wait until the scanner is done typing before processing
+  const orderCombinedQRDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const partCombinedQRDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingOrderValueRef = useRef<string>('');
+  const pendingPartValueRef = useRef<string>('');
 
   useEffect(() => {
     setLocalDuration(session.duration);
   }, [session.duration]);
 
-  // Auto-focus Part Number field when component mounts, timer stops, or user switches
+  // Auto-focus Order Number field when component mounts, timer stops, or user switches
   useEffect(() => {
-    if (!session.isRunning && partInputRef.current) {
+    if (!session.isRunning && orderInputRef.current) {
       // Multiple attempts with increasing delays for Raspberry Pi compatibility
       const attemptFocus = (attempt: number = 0) => {
         if (attempt > 5) return; // Max 5 attempts
         
         const delay = 100 + (attempt * 100); // 100ms, 200ms, 300ms, etc.
         const timer = setTimeout(() => {
-          if (partInputRef.current && document.activeElement !== partInputRef.current) {
-            partInputRef.current.focus();
-            console.log(`[Auto-focus] Part Number field focused for user ${session.userName} (attempt ${attempt + 1})`);
+          if (orderInputRef.current && document.activeElement !== orderInputRef.current) {
+            orderInputRef.current.focus();
+            console.log(`[Auto-focus] Order Number field focused for user ${session.userName} (attempt ${attempt + 1})`);
             
             // Verify focus worked, retry if not
             setTimeout(() => {
-              if (document.activeElement !== partInputRef.current) {
+              if (document.activeElement !== orderInputRef.current) {
                 attemptFocus(attempt + 1);
               }
             }, 50);
@@ -162,12 +169,9 @@ export default function CompactWorkTracker({
         duration: localDuration,
       });
     }
-    // Reset duration and fields after stopping
+    // Only reset duration after stopping - keep part/order/performance for next recording
     onUpdateSession?.(session.id, {
       duration: 0,
-      partNumber: "",
-      orderNumber: "",
-      performanceId: "",
     });
   };
 
@@ -237,6 +241,12 @@ export default function CompactWorkTracker({
     const newValue = e.target.value;
     const normalized = normalizeGermanChars(newValue);
     
+    // If we just processed a combined QR, ignore subsequent onChange events
+    if (combinedQRParsedRef.current) {
+      console.log('[Part Field] Ignoring onChange - combined QR lock active');
+      return;
+    }
+    
     const now = Date.now();
     const timeDiff = now - partLastKeyTimeRef.current;
     partLastKeyTimeRef.current = now;
@@ -246,49 +256,80 @@ export default function CompactWorkTracker({
     }
     
     const wasScanning = partIsScanningRef.current;
-    const isRapidTyping = timeDiff > 0 && timeDiff < 100; // Increased from 50ms to 100ms for slower scanners
+    const isRapidTyping = timeDiff > 0 && timeDiff < 100;
     
-    // Check if this is a combined QR code (order & part number) - must check FIRST before updating state
-    if (normalized) {
+    // Always update the part number field immediately (so user sees what's being typed)
+    onUpdateSession?.(session.id, { partNumber: normalized });
+    
+    // Check if this COULD be a combined QR code - use debouncing to wait for full input
+    if (normalized && isRapidTyping) {
       const combined = parseCombinedQRCode(normalized);
       if (combined && validateParsedResult(combined)) {
-        console.log('[Combined QR Detected in Part Field]', { 
-          scanned: normalized, 
-          format: combined.format,
-          confidence: combined.confidence,
-          orderNumber: combined.orderNumber, 
-          partNumber: combined.partNumber,
-          timeDiff,
-          isRapidTyping
-        });
-        // Always parse combined codes, regardless of timing
-        onUpdateSession?.(session.id, { 
-          orderNumber: combined.orderNumber, 
-          partNumber: combined.partNumber 
-        });
-        partIsScanningRef.current = false;
-        partScanTimeoutRef.current = setTimeout(() => {
-          perfInputRef.current?.focus();
+        // Store the pending value and start/restart debounce timer
+        pendingPartValueRef.current = normalized;
+        
+        // Clear any existing debounce timer
+        if (partCombinedQRDebounceRef.current) {
+          clearTimeout(partCombinedQRDebounceRef.current);
+        }
+        
+        // Wait 150ms after last keystroke before processing combined QR
+        // This ensures we have the COMPLETE scanned value
+        partCombinedQRDebounceRef.current = setTimeout(() => {
+          const finalValue = pendingPartValueRef.current;
+          const finalCombined = parseCombinedQRCode(finalValue);
+          
+          if (finalCombined && validateParsedResult(finalCombined)) {
+            console.log('[Combined QR FINAL in Part Field]', { 
+              scanned: finalValue, 
+              format: finalCombined.format,
+              confidence: finalCombined.confidence,
+              orderNumber: finalCombined.orderNumber, 
+              partNumber: finalCombined.partNumber
+            });
+            
+            // LOCK: Prevent any more processing
+            combinedQRParsedRef.current = true;
+            
+            // Update BOTH fields with the COMPLETE parsed values
+            onUpdateSession?.(session.id, { 
+              orderNumber: finalCombined.orderNumber, 
+              partNumber: finalCombined.partNumber 
+            });
+            
+            // Focus Performance ID after a short delay
+            setTimeout(() => {
+              combinedQRParsedRef.current = false;
+              perfInputRef.current?.focus();
+            }, 100);
+          }
+          
+          pendingPartValueRef.current = '';
         }, 150);
-        return; // STOP HERE - don't process as normal part number
+        
+        return; // Don't do normal field navigation while potentially scanning combined QR
       }
     }
     
-    // Normal part number processing (not a combined code)
-    if (isRapidTyping && wasScanning) {
-      onUpdateSession?.(session.id, { partNumber: normalized });
-    } else if (isRapidTyping && !wasScanning) {
+    // Clear any pending combined QR detection if this doesn't look like a combined code
+    if (partCombinedQRDebounceRef.current) {
+      clearTimeout(partCombinedQRDebounceRef.current);
+      partCombinedQRDebounceRef.current = null;
+    }
+    pendingPartValueRef.current = '';
+    
+    // Normal part number processing - handle scanning state
+    if (isRapidTyping && !wasScanning) {
       partIsScanningRef.current = true;
-      onUpdateSession?.(session.id, { partNumber: normalized });
-    } else {
+    } else if (!isRapidTyping) {
       partIsScanningRef.current = false;
-      onUpdateSession?.(session.id, { partNumber: normalized });
     }
     
+    // After Part Number, move to Performance ID (Order → Part → Performance flow)
     partScanTimeoutRef.current = setTimeout(() => {
       partIsScanningRef.current = false;
       if (normalized && !session.isRunning) {
-        orderInputRef.current?.focus();
+        perfInputRef.current?.focus();
       }
     }, 100);
   };
@@ -296,6 +337,12 @@ export default function CompactWorkTracker({
   const handleOrderNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     const normalized = normalizeGermanChars(newValue);
+    
+    // If we just processed a combined QR, ignore subsequent onChange events
+    if (combinedQRParsedRef.current) {
+      console.log('[Order Field] Ignoring onChange - combined QR lock active');
+      return;
+    }
     
     const now = Date.now();
     const timeDiff = now - orderLastKeyTimeRef.current;
@@ -306,58 +353,80 @@ export default function CompactWorkTracker({
     }
     
     const wasScanning = orderIsScanningRef.current;
-    const isRapidTyping = timeDiff > 0 && timeDiff < 100; // Increased from 50ms to 100ms for slower scanners
+    const isRapidTyping = timeDiff > 0 && timeDiff < 100;
     
-    // Check if this is a combined QR code (order & part number) - must check FIRST
-    if (normalized) {
+    // Always update the order number field immediately (so user sees what's being typed)
+    onUpdateSession?.(session.id, { orderNumber: normalized });
+    
+    // Check if this COULD be a combined QR code - use debouncing to wait for full input
+    if (normalized && isRapidTyping) {
       const combined = parseCombinedQRCode(normalized);
       if (combined && validateParsedResult(combined)) {
-        console.log('[Combined QR Detected in Order Field]', { 
-          scanned: normalized, 
-          format: combined.format,
-          confidence: combined.confidence,
-          orderNumber: combined.orderNumber, 
-          partNumber: combined.partNumber,
-          timeDiff,
-          isRapidTyping
-        });
-        // Always parse combined codes, regardless of timing
-        onUpdateSession?.(session.id, { 
-          orderNumber: combined.orderNumber, 
-          partNumber: combined.partNumber 
-        });
-        orderIsScanningRef.current = false;
-        orderScanTimeoutRef.current = setTimeout(() => {
-          perfInputRef.current?.focus();
+        // Store the pending value and start/restart debounce timer
+        pendingOrderValueRef.current = normalized;
+        
+        // Clear any existing debounce timer
+        if (orderCombinedQRDebounceRef.current) {
+          clearTimeout(orderCombinedQRDebounceRef.current);
+        }
+        
+        // Wait 150ms after last keystroke before processing combined QR
+        // This ensures we have the COMPLETE scanned value
+        orderCombinedQRDebounceRef.current = setTimeout(() => {
+          const finalValue = pendingOrderValueRef.current;
+          const finalCombined = parseCombinedQRCode(finalValue);
+          
+          if (finalCombined && validateParsedResult(finalCombined)) {
+            console.log('[Combined QR FINAL in Order Field]', { 
+              scanned: finalValue, 
+              format: finalCombined.format,
+              confidence: finalCombined.confidence,
+              orderNumber: finalCombined.orderNumber, 
+              partNumber: finalCombined.partNumber
+            });
+            
+            // LOCK: Prevent any more processing
+            combinedQRParsedRef.current = true;
+            
+            // Update BOTH fields with the COMPLETE parsed values
+            onUpdateSession?.(session.id, { 
+              orderNumber: finalCombined.orderNumber, 
+              partNumber: finalCombined.partNumber 
+            });
+            
+            // Focus Performance ID after a short delay
+            setTimeout(() => {
+              combinedQRParsedRef.current = false;
+              perfInputRef.current?.focus();
+            }, 100);
+          }
+          
+          pendingOrderValueRef.current = '';
         }, 150);
-        return; // STOP HERE - don't process as normal order number
+        
+        return; // Don't do normal field navigation while potentially scanning combined QR
       }
     }
     
-    // If part number is empty and this is a scan, auto-fill part number instead
-    if (!session.partNumber && isRapidTyping && normalized) {
-      onUpdateSession?.(session.id, { partNumber: normalized, orderNumber: '' });
-      orderIsScanningRef.current = false;
-      orderScanTimeoutRef.current = setTimeout(() => {
-        partInputRef.current?.focus();
-      }, 100);
-      return;
+    // Clear any pending combined QR detection if this doesn't look like a combined code
+    if (orderCombinedQRDebounceRef.current) {
+      clearTimeout(orderCombinedQRDebounceRef.current);
+      orderCombinedQRDebounceRef.current = null;
     }
+    pendingOrderValueRef.current = '';
     
-    if (isRapidTyping && wasScanning) {
-      onUpdateSession?.(session.id, { orderNumber: normalized });
-    } else if (isRapidTyping && !wasScanning) {
+    // Normal order number processing - handle scanning state
+    if (isRapidTyping && !wasScanning) {
       orderIsScanningRef.current = true;
-      onUpdateSession?.(session.id, { orderNumber: normalized });
-    } else {
+    } else if (!isRapidTyping) {
       orderIsScanningRef.current = false;
-      onUpdateSession?.(session.id, { orderNumber: normalized });
     }
     
+    // After Order Number, move to Part Number (Order → Part → Performance flow)
     orderScanTimeoutRef.current = setTimeout(() => {
       orderIsScanningRef.current = false;
       if (normalized && !session.isRunning) {
-        perfInputRef.current?.focus();
+        partInputRef.current?.focus();
       }
     }, 100);
   };
@@ -377,12 +446,12 @@ export default function CompactWorkTracker({
     const wasScanning = perfIsScanningRef.current;
     const isRapidTyping = timeDiff > 0 && timeDiff < 50;
     
-    // If part number is empty and this is a scan, auto-fill part number instead
-    if (!session.partNumber && isRapidTyping && normalized) {
-      onUpdateSession?.(session.id, { partNumber: normalized, performanceId: '' });
+    // If order number is empty and this is a scan, auto-fill order number instead
+    if (!session.orderNumber && isRapidTyping && normalized) {
+      onUpdateSession?.(session.id, { orderNumber: normalized, performanceId: '' });
       perfIsScanningRef.current = false;
       perfScanTimeoutRef.current = setTimeout(() => {
-        partInputRef.current?.focus();
+        orderInputRef.current?.focus();
       }, 100);
       return;
     }
@@ -469,34 +538,8 @@ export default function CompactWorkTracker({
               </div>
             </div>
 
-            {/* Input Fields */}
+            {/* Input Fields - Order: Order Number → Part Number → Performance ID */}
             <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-muted-foreground">{t.tracker.partNumber}</label>
-                <div className="flex gap-2">
-                  <Input
-                    ref={partInputRef}
-                    value={session.partNumber}
-                    onChange={handlePartNumberChange}
-                    onFocus={handlePartNumberFocus}
-                    disabled={session.isRunning}
-                    placeholder={t.tracker.typeToSearch}
-                    className="h-14 text-xl font-bold flex-1"
-                    data-testid="input-part-number"
-                  />
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => openDrawer("part")}
-                    disabled={session.isRunning}
-                    className="h-14 w-14 shrink-0"
-                    data-testid="button-dropdown-part"
-                  >
-                    <ChevronDown className="w-6 h-6" />
-                  </Button>
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-muted-foreground">{t.tracker.orderNumber}</label>
                 <div className="flex gap-2">
@@ -517,6 +560,32 @@ export default function CompactWorkTracker({
                     disabled={session.isRunning}
                     className="h-14 w-14 shrink-0"
                     data-testid="button-dropdown-order"
+                  >
+                    <ChevronDown className="w-6 h-6" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-muted-foreground">{t.tracker.partNumber}</label>
+                <div className="flex gap-2">
+                  <Input
+                    ref={partInputRef}
+                    value={session.partNumber}
+                    onChange={handlePartNumberChange}
+                    onFocus={handlePartNumberFocus}
+                    disabled={session.isRunning}
+                    placeholder={t.tracker.typeToSearch}
+                    className="h-14 text-xl font-bold flex-1"
+                    data-testid="input-part-number"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => openDrawer("part")}
+                    disabled={session.isRunning}
+                    className="h-14 w-14 shrink-0"
+                    data-testid="button-dropdown-part"
                   >
                     <ChevronDown className="w-6 h-6" />
                   </Button>
@@ -588,29 +657,9 @@ export default function CompactWorkTracker({
             </div>
           </div>
 
-          {/* Recent Items */}
+          {/* Recent Items - Order: Order Number → Part Number → Performance ID */}
           {!session.isRunning && (
             <div className="space-y-3 sm:space-y-4 md:space-y-6">
-              {/* Recent Part Numbers */}
-              {recentPartNumbers.length > 0 && (
-                <div className="space-y-2 sm:space-y-3">
-                  <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t.tracker.partNumber}</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
-                    {recentPartNumbers.map((part) => (
-                      <Button
-                        key={part}
-                        variant="outline"
-                        className="h-10 sm:h-11 md:h-12 text-sm sm:text-base font-bold border-2 hover:border-primary overflow-hidden"
-                        onClick={() => onUpdateSession?.(session.id, { partNumber: part })}
-                        data-testid={`button-recent-part-${part}`}
-                      >
-                        <span className="truncate w-full">{part}</span>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Recent Order Numbers */}
               {recentOrderNumbers.length > 0 && (
                 <div className="space-y-2 sm:space-y-3">
@@ -625,6 +674,26 @@ export default function CompactWorkTracker({
                         data-testid={`button-recent-order-${order}`}
                       >
                         <span className="truncate w-full">{order}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Part Numbers */}
+              {recentPartNumbers.length > 0 && (
+                <div className="space-y-2 sm:space-y-3">
+                  <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t.tracker.partNumber}</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
+                    {recentPartNumbers.map((part) => (
+                      <Button
+                        key={part}
+                        variant="outline"
+                        className="h-10 sm:h-11 md:h-12 text-sm sm:text-base font-bold border-2 hover:border-primary overflow-hidden"
+                        onClick={() => onUpdateSession?.(session.id, { partNumber: part })}
+                        data-testid={`button-recent-part-${part}`}
+                      >
+                        <span className="truncate w-full">{part}</span>
                       </Button>
                     ))}
                   </div>

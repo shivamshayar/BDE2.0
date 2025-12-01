@@ -81,9 +81,6 @@ export async function initializeDatabase() {
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
     `);
-
-    // Drop and recreate performance_ids table with new schema
-    // await db.execute(sql`DROP TABLE IF EXISTS performance_ids CASCADE;`);
     
     await db.execute(sql`
       CREATE TABLE performance_ids (
@@ -105,14 +102,14 @@ export async function initializeDatabase() {
       const hashedPassword = await bcrypt.hash('1234', 10);
       
       await db.insert(schema.bdeMachines).values({
-        machineId: 'BDE-1',
+        machineId: 'BDE-0',
         password: hashedPassword,
         department: 'Administration',
         isAdmin: true,
         isActive: true
       });
       
-      console.log('✅ Default admin machine created (Machine ID: BDE-1)');
+      console.log('✅ Default admin machine created (Machine ID: BDE-0)');
     }
     
     return true;
@@ -133,14 +130,14 @@ export async function initializeDatabase() {
           const hashedPassword = await bcrypt.hash('1234', 10);
           
           await db.insert(schema.bdeMachines).values({
-            machineId: 'BDE-1',
+            machineId: 'BDE-0',
             password: hashedPassword,
             department: 'Administration',
             isAdmin: true,
             isActive: true
           });
           
-          console.log('✅ Default admin machine created (Machine ID: BDE-1)');
+          console.log('✅ Default admin machine created (Machine ID: BDE-0)');
         }
       } catch (seedError) {
         console.log('ℹ️ Admin seeding skipped (may already exist)');

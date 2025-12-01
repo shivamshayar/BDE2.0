@@ -3,6 +3,17 @@
 ## Project Overview
 A comprehensive Business Data Entry (BDE) system for tracking factory worker performance on production machines. Features machine-based authentication, multi-user session management, timer-based work tracking, and admin dashboard for managing master data.
 
+## Recent Changes (December 1, 2025)
+- ✅ **Field Order Changed** - Fields reordered to: Order Number → Part Number → Performance ID
+  - Order Number is now the first field (primary priority)
+  - Auto-focus now targets Order Number field on page load
+  - Navigation flow updated accordingly
+- ✅ **Combined QR Code Fix** - Fixed race condition in combined QR scanning
+  - Implemented 150ms debounce to wait for complete barcode scan
+  - Combined QR now works correctly in BOTH Order Number and Part Number fields
+  - Previously, only partial values were being captured due to early detection
+  - Supports all formats: `12345/678`, `0001-2`, `12345-123/1234`, etc.
+
 ## Recent Changes (November 5, 2025)
 - ✅ **Production-Level Combined QR Code Parser** - Completely rewritten QR code parsing system
   - Supports 4 different combined QR code formats with smart detection
