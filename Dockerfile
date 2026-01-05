@@ -2,15 +2,12 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y python3 make g++
-
-# Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+RUN npm ci 
 
-EXPOSE 5000
+COPY . .
 
-CMD ["npm", "run", "dev"]
+RUN npm run build
+
+CMD ["node", "dist/index.cjs"]
