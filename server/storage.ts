@@ -240,7 +240,7 @@ export class DbStorage implements IStorage {
   }
 
   async updatePerformanceId(id: string, updates: Partial<PerformanceId>): Promise<PerformanceId | undefined> {
-    const result = await db.update(performanceIds).set(updates).where(eq(performanceIds.id, id)).returning();
+    const result = await db.update(performanceIds).set(updates).where(eq(performanceIds.performanceId, id)).returning();
     return result[0];
   }
 
@@ -261,7 +261,7 @@ export class DbStorage implements IStorage {
   }
 
   async deletePerformanceId(id: string): Promise<void> {
-    await db.delete(performanceIds).where(eq(performanceIds.id, id));
+    await db.delete(performanceIds).where(eq(performanceIds.performanceId, id));
   }
 }
 
