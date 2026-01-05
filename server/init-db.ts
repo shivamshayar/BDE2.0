@@ -83,7 +83,7 @@ export async function initializeDatabase() {
     `);
     
     await db.execute(sql`
-      CREATE TABLE performance_ids (
+      CREATE TABLE IF NOT EXISTS performance_ids (
         performance_id TEXT PRIMARY KEY,
         performance_name TEXT NOT NULL,
         description TEXT,
