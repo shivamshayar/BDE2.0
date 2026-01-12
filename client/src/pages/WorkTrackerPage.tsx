@@ -22,6 +22,7 @@ interface UserSession {
   userImage?: string;
   isRunning: boolean;
   duration: number;
+  startTime?: number; // Timestamp when timer started (for background tab support)
   partNumber: string;
   orderNumber: string;
   performanceId: string;

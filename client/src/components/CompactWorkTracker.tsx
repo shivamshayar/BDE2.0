@@ -26,6 +26,7 @@ interface UserSession {
   userImage?: string;
   isRunning: boolean;
   duration: number;
+  startTime?: number; // Timestamp when timer started (for background tab support)
   partNumber: string;
   orderNumber: string;
   performanceId: string;
@@ -107,6 +108,41 @@ export default function CompactWorkTracker({
     setLocalDuration(session.duration);
   }, [session.duration]);
 
+  // Timer effect - uses timestamp-based calculation to handle background tabs correctly
+  useEffect(() => {
+    if (!session.isRunning) {
+      return;
+    }
+
+    const calculateElapsed = () => {
+      if (!session.startTime) return session.duration;
+      const now = Date.now();
+      return Math.floor((now - session.startTime) / 1000);
+    };
+
+    // Update immediately
+    setLocalDuration(calculateElapsed());
+
+    // Update every second
+    const interval = setInterval(() => {
+      setLocalDuration(calculateElapsed());
+    }, 1000);
+
+    // Also update when tab becomes visible again (handles browser throttling)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && session.isRunning) {
+        setLocalDuration(calculateElapsed());
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [session.isRunning, session.startTime, session.duration]);
+
   // Auto-focus Order Number field when component mounts, timer stops, or user switches
   useEffect(() => {
     if (!session.isRunning && orderInputRef.current) {
@@ -154,7 +190,8 @@ export default function CompactWorkTracker({
 
   const handleStart = () => {
     if (session.partNumber && session.orderNumber && session.performanceId) {
-      onUpdateSession?.(session.id, { isRunning: true });
+      // Set startTime to current timestamp when starting
+      onUpdateSession?.(session.id, { isRunning: true, startTime: Date.now() });
     }
   };
 

@@ -93,7 +93,6 @@ export default function WorkTracker({
       duration,
     });
     setShowStopDialog(false);
-    setPerformanceId("");
     // Only reset duration - keep part/order/performance for next recording
     setDuration(0);
   };

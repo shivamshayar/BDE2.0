@@ -1,44 +1,74 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Clock } from "lucide-react";
 
 interface TimerProps {
   isRunning: boolean;
   duration: number;
+  startTime?: number; // Timestamp when timer started
   onDurationChange?: (duration: number) => void;
 }
 
-export default function Timer({ isRunning, duration, onDurationChange }: TimerProps) {
-  const [seconds, setSeconds] = useState(duration);
+export default function Timer({ isRunning, duration, startTime, onDurationChange }: TimerProps) {
+  const [displaySeconds, setDisplaySeconds] = useState(duration);
 
-  useEffect(() => {
-    setSeconds(duration);
-  }, [duration]);
+  // Calculate current elapsed time based on startTime
+  const calculateElapsed = useCallback(() => {
+    if (!isRunning || !startTime) {
+      return duration;
+    }
+    const now = Date.now();
+    const elapsedSinceStart = Math.floor((now - startTime) / 1000);
+    return elapsedSinceStart;
+  }, [isRunning, startTime, duration]);
 
+  // Update display when timer state changes
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    
-    if (isRunning) {
-      interval = setInterval(() => {
-        setSeconds((prevSeconds) => {
-          const newSeconds = prevSeconds + 1;
-          if (onDurationChange) {
-            onDurationChange(newSeconds);
-          }
-          return newSeconds;
-        });
-      }, 1000);
-    } else if (interval) {
-      clearInterval(interval);
+    if (!isRunning) {
+      setDisplaySeconds(duration);
+      return;
     }
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isRunning, onDurationChange]);
+    // Calculate initial display
+    setDisplaySeconds(calculateElapsed());
 
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
+    // Update display every second
+    const interval = setInterval(() => {
+      const elapsed = calculateElapsed();
+      setDisplaySeconds(elapsed);
+      if (onDurationChange) {
+        onDurationChange(elapsed);
+      }
+    }, 1000);
+
+    // Also update when tab becomes visible again (handles background throttling)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isRunning) {
+        const elapsed = calculateElapsed();
+        setDisplaySeconds(elapsed);
+        if (onDurationChange) {
+          onDurationChange(elapsed);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isRunning, startTime, calculateElapsed, onDurationChange]);
+
+  // Sync with external duration when not running
+  useEffect(() => {
+    if (!isRunning) {
+      setDisplaySeconds(duration);
+    }
+  }, [duration, isRunning]);
+
+  const hours = Math.floor(displaySeconds / 3600);
+  const minutes = Math.floor((displaySeconds % 3600) / 60);
+  const secs = displaySeconds % 60;
 
   const formatTime = (num: number) => num.toString().padStart(2, "0");
 
@@ -71,7 +101,7 @@ export default function Timer({ isRunning, duration, onDurationChange }: TimerPr
             ? "bg-green-500 text-white shadow-md" 
             : "bg-muted text-muted-foreground"
         }`}>
-          {isRunning ? "🟢 Timer Running" : "⏸️ Timer Stopped"}
+          {isRunning ? "Timer Running" : "Timer Stopped"}
         </span>
       </div>
     </div>
