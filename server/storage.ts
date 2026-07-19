@@ -22,7 +22,7 @@ import {
   type PerformanceId,
   type InsertPerformanceId
 } from "@shared/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, gte } from "drizzle-orm";
 
 export interface IStorage {
   // BDE Machines
@@ -48,9 +48,9 @@ export interface IStorage {
   deleteWorkSession(id: string): Promise<void>;
 
   // Work Logs
-  createWorkLog(log: InsertWorkLog): Promise<WorkLog>;
+  createWorkLog(log: InsertWorkLog & { completedAt?: Date }): Promise<WorkLog>;
   getWorkLogsByMachine(machineId: string, limit?: number): Promise<WorkLog[]>;
-  getWorkLogsByUser(userId: string, limit?: number): Promise<WorkLog[]>;
+  getWorkLogsByUser(userId: string, days?: number, machineId?: string): Promise<WorkLog[]>;
   updateWorkLog(id: string, updates: Partial<WorkLog>): Promise<WorkLog | undefined>;
   getRecentPartNumbers(machineId: string, limit?: number): Promise<string[]>;
   getRecentOrderNumbers(machineId: string, limit?: number): Promise<string[]>;
@@ -142,7 +142,7 @@ export class DbStorage implements IStorage {
   }
 
   // Work Logs
-  async createWorkLog(log: InsertWorkLog): Promise<WorkLog> {
+  async createWorkLog(log: InsertWorkLog & { completedAt?: Date }): Promise<WorkLog> {
     const result = await db.insert(workLogs).values(log).returning();
     return result[0];
   }
@@ -155,12 +155,16 @@ export class DbStorage implements IStorage {
       .limit(limit);
   }
 
-  async getWorkLogsByUser(userId: string, limit: number = 10): Promise<WorkLog[]> {
+  async getWorkLogsByUser(userId: string, days: number = 7, machineId?: string): Promise<WorkLog[]> {
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const conditions = [eq(workLogs.userId, userId), gte(workLogs.completedAt, cutoff)];
+    if (machineId) {
+      conditions.push(eq(workLogs.machineId, machineId));
+    }
     return await db.select()
       .from(workLogs)
-      .where(eq(workLogs.userId, userId))
-      .orderBy(desc(workLogs.completedAt))
-      .limit(limit);
+      .where(and(...conditions))
+      .orderBy(desc(workLogs.completedAt));
   }
 
   async updateWorkLog(id: string, updates: Partial<WorkLog>): Promise<WorkLog | undefined> {

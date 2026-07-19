@@ -15,7 +15,7 @@ interface SavedMachine {
 }
 
 interface MachineLoginFormProps {
-  onLogin?: (machineId: string, password: string) => void;
+  onLogin?: (machineId: string, password: string) => Promise<boolean> | void;
   error?: string;
   loading?: boolean;
 }
@@ -57,9 +57,18 @@ export default function MachineLoginForm({ onLogin, error, loading }: MachineLog
     localStorage.setItem(SAVED_MACHINES_KEY, JSON.stringify(updated));
   };
 
-  const handleQuickLogin = (machine: SavedMachine) => {
+  const handleQuickLogin = async (machine: SavedMachine) => {
     if (onLogin) {
-      onLogin(machine.machineId, machine.password);
+      const success = await Promise.resolve(onLogin(machine.machineId, machine.password));
+      if (success) {
+        // Refresh last-login timestamp for this machine
+        saveMachineCredentials(machine.machineId, machine.password);
+      } else {
+        // Saved credentials are stale (e.g. password changed) —
+        // show the manual form so the error message is visible
+        setMachineId(machine.machineId);
+        setShowManualLogin(true);
+      }
     }
   };
 
@@ -70,12 +79,14 @@ export default function MachineLoginForm({ onLogin, error, loading }: MachineLog
     localStorage.setItem(SAVED_MACHINES_KEY, JSON.stringify(updated));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (onLogin) {
-      // Save credentials for quick login next time
-      saveMachineCredentials(machineId, password);
-      onLogin(machineId, password);
+      const success = await Promise.resolve(onLogin(machineId, password));
+      // Only save credentials for quick login when they are actually valid
+      if (success) {
+        saveMachineCredentials(machineId, password);
+      }
     }
   };
 

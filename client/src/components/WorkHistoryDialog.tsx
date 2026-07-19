@@ -47,6 +47,7 @@ interface WorkHistoryDialogProps {
   onOpenChange: (open: boolean) => void;
   userId: string;
   userName: string;
+  machineId?: string;
   partNumbers: string[];
   orderNumbers: string[];
   performanceIds: PerformanceIdItem[];
@@ -57,6 +58,7 @@ export default function WorkHistoryDialog({
   onOpenChange,
   userId,
   userName,
+  machineId,
   partNumbers,
   orderNumbers,
   performanceIds,
@@ -68,11 +70,17 @@ export default function WorkHistoryDialog({
     partNumber: "",
     orderNumber: "",
     performanceId: "",
-    duration: 0,
+    durationHours: 0,
+    durationMinutes: 0,
   });
 
   const { data: workLogs = [], isLoading, error } = useQuery<WorkLog[]>({
-    queryKey: ["/api/work-logs/user", userId],
+    queryKey: ["/api/work-logs/user", userId, machineId],
+    queryFn: async () => {
+      const params = machineId ? `?machineId=${encodeURIComponent(machineId)}` : "";
+      const response = await apiRequest("GET", `/api/work-logs/user/${userId}${params}`);
+      return response.json();
+    },
     enabled: open && !!userId,
   });
 
@@ -86,7 +94,7 @@ export default function WorkHistoryDialog({
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/work-logs/user", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-logs/user", userId, machineId] });
       setEditingId(null);
       toast({
         title: t.save,
@@ -108,7 +116,8 @@ export default function WorkHistoryDialog({
       partNumber: log.partNumber,
       orderNumber: log.orderNumber,
       performanceId: log.performanceId,
-      duration: log.duration,
+      durationHours: Math.floor(log.duration / 3600),
+      durationMinutes: Math.floor((log.duration % 3600) / 60),
     });
   };
 
@@ -116,7 +125,10 @@ export default function WorkHistoryDialog({
     if (editingId) {
       updateMutation.mutate({
         id: editingId,
-        ...editForm,
+        partNumber: editForm.partNumber,
+        orderNumber: editForm.orderNumber,
+        performanceId: editForm.performanceId,
+        duration: editForm.durationHours * 3600 + editForm.durationMinutes * 60,
       });
     }
   };
@@ -127,7 +139,8 @@ export default function WorkHistoryDialog({
       partNumber: "",
       orderNumber: "",
       performanceId: "",
-      duration: 0,
+      durationHours: 0,
+      durationMinutes: 0,
     });
   };
 
@@ -158,7 +171,7 @@ export default function WorkHistoryDialog({
               <div className="text-destructive">{t.history.errorLoading}</div>
               <Button
                 variant="outline"
-                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/work-logs/user", userId] })}
+                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/work-logs/user", userId, machineId] })}
                 data-testid="button-retry-history"
               >
                 {t.history.retry}
@@ -346,16 +359,42 @@ export default function WorkHistoryDialog({
                       <div className="space-y-2">
                         <Label>{t.history.duration}</Label>
                         {isEditing ? (
-                          <Input
-                            type="number"
-                            min="0"
-                            value={editForm.duration}
-                            onChange={(e) =>
-                              setEditForm({ ...editForm, duration: parseInt(e.target.value) || 0 })
-                            }
-                            placeholder={t.history.duration}
-                            data-testid={`input-duration-${log.id}`}
-                          />
+                          <div className="flex gap-2">
+                            <Select
+                              value={String(editForm.durationHours)}
+                              onValueChange={(value) =>
+                                setEditForm({ ...editForm, durationHours: parseInt(value) })
+                              }
+                            >
+                              <SelectTrigger className="h-12" data-testid={`select-hours-${log.id}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: 24 }, (_, i) => (
+                                  <SelectItem key={i} value={String(i)}>
+                                    {i} {t.time.hours}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Select
+                              value={String(editForm.durationMinutes)}
+                              onValueChange={(value) =>
+                                setEditForm({ ...editForm, durationMinutes: parseInt(value) })
+                              }
+                            >
+                              <SelectTrigger className="h-12" data-testid={`select-minutes-${log.id}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: 60 }, (_, i) => (
+                                  <SelectItem key={i} value={String(i)}>
+                                    {i} {t.time.minutes}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         ) : (
                           <div className="font-mono text-sm p-2 bg-muted rounded" data-testid={`text-duration-${log.id}`}>
                             {formatDuration(log.duration)}

@@ -5,6 +5,8 @@ import CompactSessionsSidebar from "@/components/CompactSessionsSidebar";
 import CompactWorkTracker from "@/components/CompactWorkTracker";
 import { useToast } from "@/hooks/use-toast";
 import { AppHeader } from "@/components/AppHeader";
+import { Switch } from "@/components/ui/switch";
+import { ScanLine, Keyboard } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +44,16 @@ export default function WorkTrackerPage() {
   const [machine, setMachine] = useState<BdeMachine | null>(null);
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string>("");
+  // Scanner mode: when ON, tracker inputs auto-advance to the next field
+  // (barcode scanner workflow). When OFF, keyboard users type freely.
+  const [scannerMode, setScannerMode] = useState<boolean>(() => {
+    return localStorage.getItem("bde_scanner_mode") !== "false";
+  });
+
+  const handleScannerModeChange = (on: boolean) => {
+    setScannerMode(on);
+    localStorage.setItem("bde_scanner_mode", String(on));
+  };
 
   // Load machine from session storage
   useEffect(() => {
@@ -359,12 +371,24 @@ export default function WorkTrackerPage() {
       />
 
       <div className="flex flex-col flex-1">
-        <AppHeader />
+        <AppHeader>
+          <div className="flex items-center gap-2 border rounded-md px-3 h-9">
+            <Keyboard className={`w-5 h-5 ${!scannerMode ? "text-primary" : "text-muted-foreground/50"}`} />
+            <Switch
+              checked={scannerMode}
+              onCheckedChange={handleScannerModeChange}
+              data-testid="switch-scanner-mode"
+            />
+            <ScanLine className={`w-5 h-5 ${scannerMode ? "text-primary" : "text-muted-foreground/50"}`} />
+          </div>
+        </AppHeader>
         {activeSession ? (
           <CompactWorkTracker
           session={activeSession}
           department={machine.department}
           machineId={machine.machineId}
+          machineDbId={machine.id}
+          scannerMode={scannerMode}
           partNumbers={partNumbers.map((p: any) => p.partNumber)}
           orderNumbers={orderNumbers.map((o: any) => o.orderNumber)}
           performanceIds={performanceIds}

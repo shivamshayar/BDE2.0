@@ -302,7 +302,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: result.error.issues });
       }
 
-      const log = await storage.createWorkLog(result.data);
+      // Manual entries may carry their own completion timestamp
+      let completedAt: Date | undefined;
+      if (req.body.completedAt) {
+        completedAt = new Date(req.body.completedAt);
+        if (isNaN(completedAt.getTime())) {
+          return res.status(400).json({ error: "Invalid completedAt date" });
+        }
+      }
+
+      const log = await storage.createWorkLog(
+        completedAt ? { ...result.data, completedAt } : result.data
+      );
       res.json(log);
     } catch (error) {
       console.error("Create work log error:", error);
@@ -325,8 +336,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/work-logs/user/:userId", async (req: Request, res: Response) => {
     try {
       const { userId } = req.params;
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-      const logs = await storage.getWorkLogsByUser(userId, limit);
+      const days = req.query.days ? parseInt(req.query.days as string) : 7;
+      const machineId = req.query.machineId as string | undefined;
+      const logs = await storage.getWorkLogsByUser(userId, days, machineId);
       res.json(logs);
     } catch (error) {
       console.error("Get user work logs error:", error);
