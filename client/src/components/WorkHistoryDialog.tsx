@@ -82,6 +82,11 @@ export default function WorkHistoryDialog({
       return response.json();
     },
     enabled: open && !!userId,
+    // The global default is staleTime: Infinity, which would keep serving the
+    // result cached the first time the dialog was opened. History changes every
+    // time work is recorded, so refetch on each open instead.
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const updateMutation = useMutation({

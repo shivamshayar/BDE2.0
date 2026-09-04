@@ -194,8 +194,24 @@ export default function CompactWorkTracker({
     return perfItem ? perfItem.performanceName : performanceId;
   };
 
+  // Resolve typed/scanned text to a known performance ID (matches ID or name, case-insensitive)
+  const resolvePerformanceId = (value: string): string | null => {
+    const search = value.trim().toLowerCase();
+    if (!search) return null;
+    const byId = performanceIds.find(p => p.performanceId.trim().toLowerCase() === search);
+    if (byId) return byId.performanceId;
+    const byName = performanceIds.find(p => p.performanceName.trim().toLowerCase() === search);
+    return byName ? byName.performanceId : null;
+  };
+
+  // Skip validation while the master list is still loading
+  const isPerformanceIdValid =
+    performanceIds.length === 0 || resolvePerformanceId(session.performanceId) !== null;
+  const showPerformanceIdError =
+    !session.isRunning && !!session.performanceId && !isPerformanceIdValid;
+
   const handleStart = () => {
-    if (session.partNumber && session.orderNumber && session.performanceId) {
+    if (session.partNumber && session.orderNumber && session.performanceId && isPerformanceIdValid) {
       // Set startTime to current timestamp when starting
       onUpdateSession?.(session.id, { isRunning: true, startTime: Date.now() });
     }
@@ -263,7 +279,7 @@ export default function CompactWorkTracker({
     setDrawerOpen(false);
   };
 
-  const canStart = !session.isRunning && session.partNumber && session.orderNumber && session.performanceId;
+  const canStart = !session.isRunning && session.partNumber && session.orderNumber && session.performanceId && isPerformanceIdValid;
 
   const normalizeGermanChars = (text: string): string => {
     const charMap: Record<string, string> = {
@@ -499,14 +515,18 @@ export default function CompactWorkTracker({
       return;
     }
     
+    // Store the known ID when the text matches a performance ID or name, otherwise keep
+    // the raw text so the invalid-entry error can be shown
+    const resolved = resolvePerformanceId(normalized) ?? normalized;
+
     if (isRapidTyping && wasScanning) {
-      onUpdateSession?.(session.id, { performanceId: normalized });
+      onUpdateSession?.(session.id, { performanceId: resolved });
     } else if (isRapidTyping && !wasScanning) {
       perfIsScanningRef.current = true;
-      onUpdateSession?.(session.id, { performanceId: normalized });
+      onUpdateSession?.(session.id, { performanceId: resolved });
     } else {
       perfIsScanningRef.current = false;
-      onUpdateSession?.(session.id, { performanceId: normalized });
+      onUpdateSession?.(session.id, { performanceId: resolved });
     }
     
     perfScanTimeoutRef.current = setTimeout(() => {
@@ -654,7 +674,12 @@ export default function CompactWorkTracker({
                     onFocus={handlePerformanceIdFocus}
                     disabled={session.isRunning}
                     placeholder={t.tracker.typeToSearch}
-                    className="h-9 text-base font-bold flex-1"
+                    aria-invalid={showPerformanceIdError}
+                    className={`h-9 text-base font-bold flex-1 ${
+                      showPerformanceIdError
+                        ? "border-destructive focus-visible:ring-destructive"
+                        : ""
+                    }`}
                     data-testid="input-performance-id"
                   />
                   <Button
@@ -668,6 +693,14 @@ export default function CompactWorkTracker({
                     <ChevronDown className="w-6 h-6" />
                   </Button>
                 </div>
+                {showPerformanceIdError && (
+                  <p
+                    className="text-xs font-medium text-destructive"
+                    data-testid="error-performance-id"
+                  >
+                    {t.tracker.invalidPerformanceId}
+                  </p>
+                )}
               </div>
             </div>
           </div>

@@ -68,19 +68,36 @@ export default function ManualEntryDialog({
     setDurationMinutes(0);
   };
 
+  // Resolve typed text to a known performance ID (matches ID or name, case-insensitive)
+  const resolvePerformanceId = (value: string): string | null => {
+    const search = value.trim().toLowerCase();
+    if (!search) return null;
+    const byId = performanceIds.find(p => p.performanceId.trim().toLowerCase() === search);
+    if (byId) return byId.performanceId;
+    const byName = performanceIds.find(p => p.performanceName.trim().toLowerCase() === search);
+    return byName ? byName.performanceId : null;
+  };
+
+  // Skip validation while the master list is still loading
+  const isPerformanceIdValid =
+    performanceIds.length === 0 || resolvePerformanceId(performanceId) !== null;
+  const showPerformanceIdError = !!performanceId.trim() && !isPerformanceIdValid;
+
   const durationSeconds = durationHours * 3600 + durationMinutes * 60;
   const canSave =
     orderNumber.trim() &&
     partNumber.trim() &&
     performanceId.trim() &&
+    isPerformanceIdValid &&
     day &&
     startTime &&
     durationSeconds > 0;
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      // completedAt = start time + duration
-      const started = new Date(`${day}T${startTime.length === 5 ? startTime + ":00" : startTime}`);
+      // completedAt = start time + duration. The start time field is hours/minutes
+      // only, so seconds are always 00
+      const started = new Date(`${day}T${startTime.slice(0, 5)}:00`);
       const completedAt = new Date(started.getTime() + durationSeconds * 1000);
       const response = await apiRequest("POST", "/api/work-logs", {
         machineId: machineDbId,
@@ -88,14 +105,14 @@ export default function ManualEntryDialog({
         userName,
         orderNumber: orderNumber.trim(),
         partNumber: partNumber.trim(),
-        performanceId: performanceId.trim(),
+        performanceId: resolvePerformanceId(performanceId) ?? performanceId.trim(),
         duration: durationSeconds,
         completedAt: completedAt.toISOString(),
       });
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/work-logs/user", userId, machineDbId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-logs/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/recent"] });
       toast({
         title: t.tracker.addEntryTitle,
@@ -153,9 +170,22 @@ export default function ManualEntryDialog({
               value={performanceId}
               onChange={(e) => setPerformanceId(e.target.value)}
               placeholder={t.tracker.typeToSearch}
-              className="h-9"
+              aria-invalid={showPerformanceIdError}
+              className={`h-9 ${
+                showPerformanceIdError
+                  ? "border-destructive focus-visible:ring-destructive"
+                  : ""
+              }`}
               data-testid="input-manual-perf"
             />
+            {showPerformanceIdError && (
+              <p
+                className="text-xs font-medium text-destructive"
+                data-testid="error-manual-perf"
+              >
+                {t.tracker.invalidPerformanceId}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -176,7 +206,7 @@ export default function ManualEntryDialog({
               <Input
                 id="manual-start"
                 type="time"
-                step="1"
+                step="60"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 className="h-9"

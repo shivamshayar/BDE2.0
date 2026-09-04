@@ -218,6 +218,7 @@ export default function WorkTrackerPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/recent"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-logs/user"] });
     },
   });
 
