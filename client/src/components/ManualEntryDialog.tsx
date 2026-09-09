@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   Dialog,
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Save } from "lucide-react";
+import { ChevronDown, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -57,6 +57,8 @@ export default function ManualEntryDialog({
   const [startTime, setStartTime] = useState("");
   const [durationHours, setDurationHours] = useState(0);
   const [durationMinutes, setDurationMinutes] = useState(0);
+  const [perfDropdownOpen, setPerfDropdownOpen] = useState(false);
+  const perfFieldRef = useRef<HTMLDivElement>(null);
 
   const resetForm = () => {
     setOrderNumber("");
@@ -66,6 +68,7 @@ export default function ManualEntryDialog({
     setStartTime("");
     setDurationHours(0);
     setDurationMinutes(0);
+    setPerfDropdownOpen(false);
   };
 
   // Resolve typed text to a known performance ID (matches ID or name, case-insensitive)
@@ -82,6 +85,31 @@ export default function ManualEntryDialog({
   const isPerformanceIdValid =
     performanceIds.length === 0 || resolvePerformanceId(performanceId) !== null;
   const showPerformanceIdError = !!performanceId.trim() && !isPerformanceIdValid;
+
+  const selectedPerformanceId = resolvePerformanceId(performanceId);
+
+  // Narrow the list as the user types, but show everything again once the text
+  // is an exact match - otherwise picking an entry would filter the list to it
+  const perfSearch = performanceId.trim().toLowerCase();
+  const performanceIdOptions =
+    perfSearch && !selectedPerformanceId
+      ? performanceIds.filter(
+          p =>
+            p.performanceId.toLowerCase().includes(perfSearch) ||
+            p.performanceName.toLowerCase().includes(perfSearch),
+        )
+      : performanceIds;
+
+  useEffect(() => {
+    if (!perfDropdownOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!perfFieldRef.current?.contains(event.target as Node)) {
+        setPerfDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [perfDropdownOpen]);
 
   const durationSeconds = durationHours * 3600 + durationMinutes * 60;
   const canSave =
@@ -163,21 +191,94 @@ export default function ManualEntryDialog({
             />
           </div>
 
-          <div className="space-y-2">
+          <div
+            className="space-y-2"
+            ref={perfFieldRef}
+            onKeyDown={(e) => {
+              // Close the dropdown on Escape instead of closing the whole dialog
+              if (e.key === "Escape" && perfDropdownOpen) {
+                e.preventDefault();
+                e.stopPropagation();
+                setPerfDropdownOpen(false);
+              }
+            }}
+          >
             <Label htmlFor="manual-perf">{t.tracker.performanceId}</Label>
-            <Input
-              id="manual-perf"
-              value={performanceId}
-              onChange={(e) => setPerformanceId(e.target.value)}
-              placeholder={t.tracker.typeToSearch}
-              aria-invalid={showPerformanceIdError}
-              className={`h-9 ${
-                showPerformanceIdError
-                  ? "border-destructive focus-visible:ring-destructive"
-                  : ""
-              }`}
-              data-testid="input-manual-perf"
-            />
+            <div className="relative">
+              <div className="flex gap-2">
+                <Input
+                  id="manual-perf"
+                  value={performanceId}
+                  onChange={(e) => {
+                    setPerformanceId(e.target.value);
+                    setPerfDropdownOpen(true);
+                  }}
+                  placeholder={t.tracker.typeToSearch}
+                  role="combobox"
+                  aria-expanded={perfDropdownOpen}
+                  aria-invalid={showPerformanceIdError}
+                  className={`h-9 flex-1 ${
+                    showPerformanceIdError
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : ""
+                  }`}
+                  data-testid="input-manual-perf"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  onClick={() => setPerfDropdownOpen((open) => !open)}
+                  aria-label={t.tracker.selectPerformanceId}
+                  aria-expanded={perfDropdownOpen}
+                  data-testid="button-manual-perf-dropdown"
+                >
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${
+                      perfDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </Button>
+              </div>
+
+              {perfDropdownOpen && (
+                <div
+                  role="listbox"
+                  aria-label={t.tracker.selectPerformanceId}
+                  className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-auto rounded-md border bg-popover p-1 shadow-md"
+                  data-testid="dropdown-manual-perf"
+                >
+                  {performanceIdOptions.length === 0 ? (
+                    <p className="px-3 py-2 text-sm text-muted-foreground">
+                      {t.tracker.noResults}
+                    </p>
+                  ) : (
+                    performanceIdOptions.map((p) => (
+                      <button
+                        key={p.performanceId}
+                        type="button"
+                        role="option"
+                        aria-selected={p.performanceId === selectedPerformanceId}
+                        onClick={() => {
+                          setPerformanceId(p.performanceId);
+                          setPerfDropdownOpen(false);
+                        }}
+                        className={`flex w-full flex-col items-start rounded-sm px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground ${
+                          p.performanceId === selectedPerformanceId ? "bg-accent/50" : ""
+                        }`}
+                        data-testid={`option-manual-perf-${p.performanceId}`}
+                      >
+                        <span className="text-sm font-medium">{p.performanceName}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {p.performanceId}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
             {showPerformanceIdError && (
               <p
                 className="text-xs font-medium text-destructive"

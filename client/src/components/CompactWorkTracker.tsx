@@ -281,6 +281,9 @@ export default function CompactWorkTracker({
 
   const canStart = !session.isRunning && session.partNumber && session.orderNumber && session.performanceId && isPerformanceIdValid;
 
+  // A barcode scanner sends its payload as US-layout keystrokes. With a German
+  // keyboard layout the OS turns those into umlauts ('[' arrives as 'ü'), so
+  // scanned text has to be mapped back.
   const normalizeGermanChars = (text: string): string => {
     const charMap: Record<string, string> = {
       'ß': '-',
@@ -294,11 +297,16 @@ export default function CompactWorkTracker({
     return text.split('').map(char => charMap[char] || char).join('');
   };
 
+  // Applied in Scanner mode only. In Keyboard mode the input is typed by a
+  // person, so ü/ö/ä/ß are kept exactly as entered.
+  const normalizeScannerInput = (text: string): string =>
+    scannerMode ? normalizeGermanChars(text) : text;
+
   // Production-level combined QR code parsing (using robust parser)
 
   const handlePartNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    const normalized = normalizeGermanChars(newValue);
+    const normalized = normalizeScannerInput(newValue);
     
     // If we just processed a combined QR, ignore subsequent onChange events
     if (combinedQRParsedRef.current) {
@@ -395,7 +403,7 @@ export default function CompactWorkTracker({
 
   const handleOrderNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    const normalized = normalizeGermanChars(newValue);
+    const normalized = normalizeScannerInput(newValue);
     
     // If we just processed a combined QR, ignore subsequent onChange events
     if (combinedQRParsedRef.current) {
@@ -492,7 +500,7 @@ export default function CompactWorkTracker({
 
   const handlePerformanceIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    const normalized = normalizeGermanChars(newValue);
+    const normalized = normalizeScannerInput(newValue);
     
     const now = Date.now();
     const timeDiff = now - perfLastKeyTimeRef.current;
